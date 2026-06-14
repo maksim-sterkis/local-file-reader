@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local File Reader</title>
+    <!-- Using Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for the output area */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans p-6 md:p-12 relative">
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+
+<!-- Processing Loader Overlay -->
+<div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-4 max-w-xs w-full text-center">
+        <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p id="loading-text" class="text-gray-700 font-semibold text-sm">Processing files...</p>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+            <div id="loading-progress" class="bg-blue-600 h-1.5 rounded-full transition-all duration-100" style="width: 0%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-3xl mx-auto space-y-8">
+
+    <!-- Header -->
+    <header class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Local File Reader</h1>
+        <p class="text-gray-500">Drag and drop text-based files or select folders to read, clean, and combine your project codes.</p>
+    </header>
+
+    <!-- Drop Zone -->
+    <div id="drop-zone"
+         class="border-4 border-dashed border-gray-300 rounded-2xl p-16 flex flex-col items-center justify-center transition-all duration-200 ease-in-out bg-white shadow-sm text-gray-500 min-h-[250px] cursor-pointer">
+        <svg class="w-16 h-16 mb-4 text-gray-400 drop-icon transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <span class="text-lg font-medium">Drag & Drop files or directories here</span>
+        <span class="text-sm mt-1">Supports any text-based format (.txt, .md, .csv, code files, etc.)</span>
+    </div>
+
+    <!-- Folder Selection Area -->
+    <div class="flex items-center justify-center space-x-4 py-2">
+        <div class="h-px bg-gray-300 flex-1"></div>
+        <span class="text-sm text-gray-400 font-medium uppercase tracking-wider">or</span>
+        <div class="h-px bg-gray-300 flex-1"></div>
+    </div>
+
+    <div class="flex justify-center pb-2">
+        <button id="folder-btn" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-medium py-2.5 px-6 rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-gray-100 flex items-center space-x-2">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+            <span>Select Folder</span>
+        </button>
+        <!-- Hidden input for folder selection -->
+        <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden" />
+    </div>
+
+    <!-- Staging Area (Hidden by default) -->
+    <div id="staging-area" class="hidden opacity-0 transition-opacity duration-300 ease-in-out bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+        <!-- Top Bar with Search & Controls -->
+        <div class="bg-gray-100 border-b border-gray-200 px-6 py-4 space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <span>Staged Files</span>
+                    <span id="file-count" class="text-sm text-gray-500 ml-2">(0)</span>
+                </h2>
+                <button id="clear-all-btn" class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200 transition-colors hidden" type="button">
+                    Clear All
+                </button>
+            </div>
+
+            <!-- Search input -->
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="Filter paths (e.g. -test, >50kb), or press Enter to clean (e.g. keep .js, remove empty, ui/ remove)" class="w-full text-xs border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 shadow-sm transition-all" />
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Staged File List -->
+        <ul id="staged-file-list" class="divide-y divide-gray-100 max-h-[350px] overflow-y-auto p-2">
+            <!-- List items will dynamically populate here -->
+        </ul>
+
+        <!-- Compile Footer -->
+        <div class="bg-gray-50 border-t border-gray-200 px-6 py-5 flex flex-col space-y-4">
+
+            <!-- Compact Optimization Options -->
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
+                <span class="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Options:</span>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
+                    <input type="checkbox" id="compress-comments" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
+                    <span class="select-none">Strip Comments</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
+                    <input type="checkbox" id="compress-blanks" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
+                    <span class="select-none">Remove Blank Lines</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
+                    <input type="checkbox" id="compress-spacing" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
+                    <span class="select-none">Trim Whitespace</span>
+                </label>
+            </div>
+
+            <!-- Compile Controls -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+                <div class="flex items-center space-x-3 w-full sm:w-auto">
+                    <span id="estimated-size" title="Estimated Combined Output File Size" class="text-xs font-bold text-gray-500 bg-gray-200/60 px-3 py-2 rounded-lg border border-gray-300 shadow-inner whitespace-nowrap cursor-help">0.0 KB</span>
+                    <input type="text" id="filename-input" placeholder="Name your project..." class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm w-full sm:w-48 shadow-sm" />
+                </div>
+                <button id="compile-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg shadow-sm transition-all focus:ring-4 focus:ring-blue-100 flex items-center justify-center space-x-2 whitespace-nowrap">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Compile & Download</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropZone = document.getElementById('drop-zone');
+        const dropIcon = dropZone.querySelector('.drop-icon');
+
+        // Central Modular Warning Types Registry
+        const WARNING_TYPES = {
+            binary: {
+                key: 'isBinary',
+                label: 'Binary',
+                aliases: ['binary', 'binary file', 'binaryfiles', 'binaryfile'],
+                badgeBg: 'bg-amber-50',
+                badgeText: 'text-amber-800',
+                badgeBorder: 'border-amber-200',
+                title: 'Binary contents detected.'
+            },
+            large: {
+                key: 'isLarge',
+                label: 'Large File',
+                aliases: ['large', 'large file', 'largefiles', 'largefile'],
+                badgeBg: 'bg-rose-50',
+                badgeText: 'text-rose-800',
+                badgeBorder: 'border-rose-200',
+                title: 'File is over 1.0 MB.'
+            }
+        };
+
+        // State Management for Staged Files
+        let stagedFiles = [];
+        let fileIdCounter = 0;
+
+        // Structured Search Filter State
+        // Format: null, or query object { type: 'text'|'warning'|'negative'|'size', text|key|op|bytes: value }
+        let currentSearchQuery = null;
+
+        // Elements
+        const stagingArea = document.getElementById('staging-area');
+        const fileListContainer = document.getElementById('staged-file-list');
+        const fileCountDisplay = document.getElementById('file-count');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const compileBtn = document.getElementById('compile-btn');
+        const filenameInput = document.getElementById('filename-input');
+        const folderBtn = document.getElementById('folder-btn');
+        const folderInput = document.getElementById('folder-input');
+        const estimatedSizeDisplay = document.getElementById('estimated-size');
+        const searchInput = document.getElementById('search-input');
+
+        // Compression Toggles
+        const compressComments = document.getElementById('compress-comments');
+        const compressBlanks = document.getElementById('compress-blanks');
+        const compressSpacing = document.getElementById('compress-spacing');
+
+        // Custom Toast Notification System (Text-Only, disappearing upwards)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let bgClass = "bg-emerald-600";
+
+            if (type === 'error') {
+                bgClass = "bg-rose-600";
+            } else if (type === 'info') {
+                bgClass = "bg-blue-600";
+            }
+
+            // Starts slightly shifted up (-translate-y-2) to slide down into view
+            toast.className = `flex items-center ${bgClass} text-white px-4 py-3 rounded-xl shadow-lg transform -translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto max-w-sm`;
+            toast.innerHTML = `
+        <p class="text-xs font-semibold">${message}</p>
+      `;
+
+            container.appendChild(toast);
+            toast.offsetHeight; // Force layout calculation
+
+            // Settles cleanly at position
+            toast.classList.remove('-translate-y-2', 'opacity-0');
+            toast.classList.add('translate-y-0');
+
+            setTimeout(() => {
+                // Disappears further upwards (-translate-y-6)
+                toast.classList.remove('translate-y-0');
+                toast.classList.add('-translate-y-6', 'opacity-0');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3500);
+        }
+
+        // Processing loading overlay management
+        function showLoading(show, current = 0, total = 0) {
+            const overlay = document.getElementById('loading-overlay');
+            const text = document.getElementById('loading-text');
+            const progress = document.getElementById('loading-progress');
+            if (show) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                text.textContent = `Processing files: ${current} of ${total}`;
+                const pct = total > 0 ? (current / total) * 100 : 0;
+                progress.style.width = `${pct}%`;
+            } else {
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    progress.style.width = '0%';
+                }, 300);
+            }
+        }
+
+        // Binary file inspector
+        function checkIsBinary(file, content) {
+            const binaryExtensions = [
+                'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico', 'pdf', 'zip', 'rar', 'tar', 'gz', '7z',
+                'exe', 'dll', 'so', 'dylib', 'bin', 'dmg', 'mp3', 'wav', 'mp4', 'mkv', 'avi', 'mov', 'flv',
+                'webm', 'woff', 'woff2', 'eot', 'ttf', 'otf', 'docx', 'xlsx', 'pptx', 'class', 'jar', 'pyc'
+            ];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (binaryExtensions.includes(ext)) {
+                return true;
+            }
+
+            // Check for raw byte flags in first part of content
+            const sample = content.slice(0, 1000);
+            for (let i = 0; i < sample.length; i++) {
+                const charCode = sample.charCodeAt(i);
+                if (charCode === 0 || (charCode < 9 && charCode > 0) || (charCode > 10 && charCode < 13) || (charCode > 13 && charCode < 32)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Drag & drop events interception
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropZone.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-600');
+            dropZone.classList.remove('border-gray-300', 'text-gray-500');
+            dropIcon.classList.add('text-blue-500');
+            dropIcon.classList.remove('text-gray-400');
+        }
+
+        function unhighlight() {
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-600');
+            dropZone.classList.add('border-gray-300', 'text-gray-500');
+            dropIcon.classList.remove('text-blue-500');
+            dropIcon.classList.add('text-gray-400');
+        }
+
+        // Direct click trigger on dropzone
+        dropZone.addEventListener('click', () => {
+            folderInput.click();
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                processFileList(files);
+            }
+        }
+
+        // Process Batch Files with automatic filtering for ignores
+        async function processFileList(filesList) {
+            const files = Array.from(filesList);
+            if (files.length === 0) return;
+
+            const ignoreList = ['node_modules/', '.git/', '.DS_Store', 'dist/', 'build/'];
+            const filesToProcess = [];
+            let skippedCount = 0;
+
+            // Smart background filtering
+            files.forEach(file => {
+                const displayPath = file.webkitRelativePath || file.name;
+                const pathLower = displayPath.toLowerCase();
+                const isIgnored = ignoreList.some(item => pathLower.includes(item.toLowerCase()));
+                if (isIgnored) {
+                    skippedCount++;
+                } else {
+                    filesToProcess.push(file);
+                }
+            });
+
+            // Abort early if everything was ignored
+            if (filesToProcess.length === 0) {
+                if (skippedCount > 0) {
+                    showToast(`Skipped ${skippedCount} system/dependency files`, 'info');
+                }
+                return;
+            }
+
+            let total = filesToProcess.length;
+            let completed = 0;
+            let replacedCount = 0;
+
+            showLoading(true, completed, total);
+
+            const promises = filesToProcess.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        const textContent = e.target.result;
+                        const displayPath = file.webkitRelativePath || file.name;
+                        const isBinaryDetected = checkIsBinary(file, textContent);
+                        const isLargeFile = file.size > 1024 * 1024; // Check if > 1.0 MB
+
+                        const newFileObj = {
+                            id: fileIdCounter++,
+                            name: displayPath,
+                            content: textContent,
+                            size: (file.size / 1024).toFixed(1) + ' KB',
+                            sizeBytes: file.size, // Kept raw file size in bytes for precise size filter calculations
+                            isBinary: isBinaryDetected,
+                            isLarge: isLargeFile
+                        };
+
+                        const duplicateIndex = stagedFiles.findIndex(f => f.name === displayPath);
+                        if (duplicateIndex !== -1) {
+                            stagedFiles[duplicateIndex] = newFileObj;
+                            replacedCount++;
+                        } else {
+                            stagedFiles.push(newFileObj);
+                        }
+
+                        completed++;
+                        showLoading(true, completed, total);
+                        resolve();
+                    };
+
+                    reader.onerror = function() {
+                        console.error("Error reading file:", file.name);
+                        showToast(`Could not read: ${file.name}`, 'error');
+                        completed++;
+                        showLoading(true, completed, total);
+                        resolve();
+                    };
+
+                    reader.readAsText(file);
+                });
+            });
+
+            await Promise.all(promises);
+            showLoading(false);
+            updateStagingUI();
+
+            if (replacedCount > 0) {
+                showToast(`Staged ${total} file(s) with ${replacedCount} updated duplicate(s)`, 'info');
+            } else {
+                showToast(`Successfully staged ${total} file(s)`, 'success');
+            }
+
+            if (skippedCount > 0) {
+                setTimeout(() => {
+                    showToast(`Skipped ${skippedCount} system/dependency files`, 'info');
+                }, 800);
+            }
+        }
+
+        // Modular Parsing: Checks if input text represents a warning removal command structure
+        function parseWarningCommand(inputText) {
+            const trimmed = inputText.trim().toLowerCase();
+            const parts = trimmed.split(/\s+/);
+            const warningEntries = Object.entries(WARNING_TYPES);
+            const verbs = ['remove', 'r'];
+
+            // Match 1-word exact warnings (e.g. "large" or "binary")
+            if (parts.length === 1) {
+                const word = parts[0];
+                const matched = warningEntries.find(([name, config]) => config.aliases.includes(word));
+                if (matched) {
+                    return { type: 'filter', warningKey: matched[1].key, warningLabel: matched[1].label };
+                }
+            }
+
+            // Match 2+ word commands (e.g. "remove large", "large file r")
+            if (parts.length >= 2) {
+                // Verb first: e.g. ["remove", "large"]
+                if (verbs.includes(parts[0])) {
+                    const remainder = parts.slice(1).join(' ');
+                    const matched = warningEntries.find(([name, config]) => config.aliases.includes(remainder));
+                    if (matched) {
+                        return { type: 'action', action: 'remove', warningKey: matched[1].key, warningLabel: matched[1].label };
+                    }
+                }
+                // Verb last: e.g. ["large", "file", "remove"]
+                if (verbs.includes(parts[parts.length - 1])) {
+                    const remainder = parts.slice(0, -1).join(' ');
+                    const matched = warningEntries.find(([name, config]) => config.aliases.includes(remainder));
+                    if (matched) {
+                        return { type: 'action', action: 'remove', warningKey: matched[1].key, warningLabel: matched[1].label };
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // Modular Typing Helper: Resolves partial warning keyword matching for active live list filters
+        function getActiveWarningFilter(inputText) {
+            const trimmed = inputText.trim().toLowerCase();
+            if (!trimmed) return null;
+
+            const parts = trimmed.split(/\s+/);
+            const warningEntries = Object.entries(WARNING_TYPES);
+            const verbs = ['remove', 'r'];
+
+            // Check if command matched exactly
+            const exactCmd = parseWarningCommand(inputText);
+            if (exactCmd) {
+                return exactCmd.warningKey;
+            }
+
+            // Check partial command typing, like "remove lar"
+            if (parts.length >= 2) {
+                if (verbs.includes(parts[0])) {
+                    const remainder = parts.slice(1).join(' ');
+                    const matched = warningEntries.find(([name, config]) =>
+                        config.aliases.some(alias => alias.startsWith(remainder))
+                    );
+                    if (matched) return matched[1].key;
+                }
+                if (verbs.includes(parts[parts.length - 1])) {
+                    const remainder = parts.slice(0, -1).join(' ');
+                    const matched = warningEntries.find(([name, config]) =>
+                        config.aliases.some(alias => alias.startsWith(remainder))
+                    );
+                    if (matched) return matched[1].key;
+                }
+            }
+
+            // Match raw keyword prefixes typing, like "larg"
+            const matchedSingle = warningEntries.find(([name, config]) =>
+                config.aliases.some(alias => alias.startsWith(trimmed))
+            );
+            if (matchedSingle) {
+                return matchedSingle[1].key;
+            }
+
+            return null;
+        }
+
+        // Real-time Search Filter listener with smart negative keyword and math size-filtering support
+        searchInput.addEventListener('input', (e) => {
+            const rawValue = e.target.value;
+            const trimmed = rawValue.trim();
+            const trimmedLower = trimmed.toLowerCase();
+            const parts = trimmedLower.split(/\s+/);
+
+            // 1. Math Size Filters (e.g. >100kb, <5kb, >500)
+            const sizeMatch = trimmedLower.match(/^([<>])\s*(\d+(?:\.\d+)?)\s*(kb|mb|b)?$/i);
+            if (sizeMatch) {
+                const op = sizeMatch[1];
+                const val = parseFloat(sizeMatch[2]);
+                const unit = (sizeMatch[3] || 'kb').toLowerCase(); // Default unit is KB
+                let targetBytes = val;
+                if (unit === 'kb') targetBytes = val * 1024;
+                else if (unit === 'mb') targetBytes = val * 1024 * 1024;
+                currentSearchQuery = { type: 'size', op: op, bytes: targetBytes };
+            }
+            // 2. Negative Filters (e.g. -test, !mock)
+            else if (trimmed.startsWith('-') || trimmed.startsWith('!')) {
+                const negativeTerm = trimmed.slice(1).toLowerCase().trim();
+                currentSearchQuery = { type: 'negative', text: negativeTerm };
+            }
+            // 3. Static/Warning registry Filters
+            else {
+                const warningFilterKey = getActiveWarningFilter(rawValue);
+
+                if (warningFilterKey) {
+                    currentSearchQuery = { type: 'warning', key: warningFilterKey };
+                } else if (parts.length === 2) {
+                    const [part1, part2] = parts;
+                    if ('remove'.startsWith(part2) || part2 === 'r' || 'keep'.startsWith(part2) || part2 === 'k') {
+                        currentSearchQuery = { type: 'text', text: part1 };
+                    } else {
+                        currentSearchQuery = { type: 'text', text: rawValue.toLowerCase() };
+                    }
+                } else {
+                    currentSearchQuery = { type: 'text', text: rawValue.toLowerCase().trim() };
+                }
+            }
+            updateStagingUI(false); // Update list but don't reset typing state
+        });
+
+        // Enter Command Listener for extension cleanup, folder, warning, keep, or empty commands
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = searchInput.value.trim();
+                const valLower = val.toLowerCase();
+
+                // 1. Ghost File Sweeper command: "remove empty" or "empty remove"
+                if (valLower === 'remove empty' || valLower === 'empty remove' || valLower === 'r empty' || valLower === 'empty r') {
+                    const initialCount = stagedFiles.length;
+                    stagedFiles = stagedFiles.filter(file => file.content.length > 0);
+                    const removedCount = initialCount - stagedFiles.length;
+                    if (removedCount > 0) {
+                        showToast(`Removed ${removedCount} empty file(s)`, 'info');
+                        searchInput.value = '';
+                        currentSearchQuery = null;
+                    } else {
+                        showToast(`No empty staged files found`, 'error');
+                    }
+                    updateStagingUI();
+                    return;
+                }
+
+                // 2. Dynamic warning batch remove command execution (e.g. "remove binary", "large remove")
+                const warningCmd = parseWarningCommand(val);
+                if (warningCmd && warningCmd.type === 'action' && warningCmd.action === 'remove') {
+                    const initialCount = stagedFiles.length;
+                    stagedFiles = stagedFiles.filter(file => !file[warningCmd.warningKey]);
+                    const removedCount = initialCount - stagedFiles.length;
+                    if (removedCount > 0) {
+                        showToast(`Removed ${removedCount} ${warningCmd.warningLabel.toLowerCase()} file(s)`, 'info');
+                        searchInput.value = '';
+                        currentSearchQuery = null;
+                    } else {
+                        showToast(`No staged ${warningCmd.warningLabel.toLowerCase()} files found`, 'error');
+                    }
+                    updateStagingUI();
+                    return;
+                }
+
+                // 3. Inverted Extension Picker command: "keep .ext" or ".ext keep"
+                const keepMatch = valLower.match(/^(keep\s+(\.?\w+))|((\.?\w+)\s+keep)$/);
+                if (keepMatch) {
+                    let ext = keepMatch[2] || keepMatch[4];
+                    if (!ext.startsWith('.')) {
+                        ext = '.' + ext;
+                    }
+
+                    const initialCount = stagedFiles.length;
+                    stagedFiles = stagedFiles.filter(file => file.name.toLowerCase().endsWith(ext));
+                    const removedCount = initialCount - stagedFiles.length;
+                    if (removedCount > 0) {
+                        showToast(`Kept only files with extension '${ext}' (Removed ${removedCount} files)`, 'info');
+                        searchInput.value = '';
+                        currentSearchQuery = null;
+                    } else {
+                        showToast(`No files were removed (all staged matched '${ext}')`, 'error');
+                    }
+                    updateStagingUI();
+                    return;
+                }
+
+                // 4. Subdirectory Nuker command: "path/ remove" or "remove path/"
+                const parts = valLower.split(/\s+/);
+                if (parts.length === 2) {
+                    const [part1, part2] = parts;
+                    let targetPath = '';
+                    let isPathCommand = false;
+
+                    if ((part2 === 'remove' || part2 === 'r') && part1.endsWith('/')) {
+                        targetPath = part1;
+                        isPathCommand = true;
+                    } else if ((part1 === 'remove' || part1 === 'r') && part2.endsWith('/')) {
+                        targetPath = part2;
+                        isPathCommand = true;
+                    }
+
+                    if (isPathCommand) {
+                        const initialCount = stagedFiles.length;
+                        stagedFiles = stagedFiles.filter(file => !file.name.toLowerCase().includes(targetPath));
+                        const removedCount = initialCount - stagedFiles.length;
+                        if (removedCount > 0) {
+                            showToast(`Removed ${removedCount} file(s) under directory '${targetPath}'`, 'info');
+                            searchInput.value = '';
+                            currentSearchQuery = null;
+                        } else {
+                            showToast(`No files found under path '${targetPath}'`, 'error');
+                        }
+                        updateStagingUI();
+                        return;
+                    }
+                }
+
+                // 5. Standard extension removal batch matching (.html remove / .html r)
+                if (parts.length === 2) {
+                    let ext = parts[0];
+                    const action = parts[1];
+
+                    if (action === 'r' || action === 'remove') {
+                        if (!ext.startsWith('.')) {
+                            ext = '.' + ext;
+                        }
+
+                        const initialCount = stagedFiles.length;
+                        stagedFiles = stagedFiles.filter(file => {
+                            const fileNameLower = file.name.toLowerCase();
+                            return !fileNameLower.endsWith(ext);
+                        });
+
+                        const removedCount = initialCount - stagedFiles.length;
+                        if (removedCount > 0) {
+                            showToast(`Removed ${removedCount} file(s) with extension '${ext}'`, 'info');
+                            searchInput.value = '';
+                            currentSearchQuery = null;
+                        } else {
+                            showToast(`No staged files match extension '${ext}'`, 'error');
+                        }
+                        updateStagingUI();
+                    }
+                }
+            }
+        });
+
+        // Update UI Elements
+        function updateStagingUI(resetSearchInput = false) {
+            if (resetSearchInput) {
+                searchInput.value = '';
+                currentSearchQuery = null;
+            }
+
+            if (stagedFiles.length > 0) {
+                stagingArea.classList.remove('hidden');
+                clearAllBtn.classList.remove('hidden');
+                setTimeout(() => stagingArea.classList.remove('opacity-0'), 10);
+            } else {
+                stagingArea.classList.add('opacity-0');
+                clearAllBtn.classList.add('hidden');
+                setTimeout(() => stagingArea.classList.add('hidden'), 300);
+            }
+
+            fileCountDisplay.textContent = `(${stagedFiles.length})`;
+            fileListContainer.innerHTML = '';
+
+            // Live View Filter Evaluation
+            const visibleFiles = stagedFiles.filter(file => {
+                if (!currentSearchQuery) return true;
+
+                if (currentSearchQuery.type === 'warning') {
+                    return file[currentSearchQuery.key];
+                }
+
+                if (currentSearchQuery.type === 'size') {
+                    const fileBytes = file.sizeBytes;
+                    if (currentSearchQuery.op === '>') {
+                        return fileBytes > currentSearchQuery.bytes;
+                    } else if (currentSearchQuery.op === '<') {
+                        return fileBytes < currentSearchQuery.bytes;
+                    }
+                }
+
+                if (currentSearchQuery.type === 'negative') {
+                    if (!currentSearchQuery.text) return true; // Show all if only '-' or '!' typed so far
+                    return !file.name.toLowerCase().includes(currentSearchQuery.text);
+                }
+
+                return file.name.toLowerCase().includes(currentSearchQuery.text);
+            });
+
+            if (visibleFiles.length === 0 && currentSearchQuery) {
+                const noMatchLi = document.createElement('li');
+                noMatchLi.className = 'p-6 text-center text-xs text-gray-400 italic';
+                noMatchLi.textContent = 'No files match your search filter';
+                fileListContainer.appendChild(noMatchLi);
+            }
+
+            visibleFiles.forEach((fileObj) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors group';
+
+                // Render warning badges dynamically from warning registry configuration
+                let badgesHTML = '';
+                Object.values(WARNING_TYPES).forEach(warning => {
+                    if (fileObj[warning.key]) {
+                        badgesHTML += `<span class="inline-flex items-center px-2 py-0.5 ml-2 rounded text-[10px] font-semibold ${warning.badgeBg} ${warning.badgeText} ${warning.badgeBorder} select-none shadow-sm cursor-help" title="${warning.title}">${warning.label}</span>`;
+                    }
+                });
+
+                li.innerHTML = `
+          <div class="flex items-center space-x-3 overflow-hidden flex-1">
+            <svg class="w-6 h-6 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <div class="truncate">
+              <div class="flex items-center truncate">
+                <p class="text-sm font-medium text-gray-800 truncate" title="${fileObj.name}">${fileObj.name}</p>
+                ${badgesHTML}
+              </div>
+              <p class="text-[11px] text-gray-500">${fileObj.size} • ${fileObj.content.length.toLocaleString()} characters</p>
+            </div>
+          </div>
+          <button type="button" class="remove-btn ml-4 p-2 text-gray-400 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-red-500 hover:bg-red-50 rounded-full transition-all flex-shrink-0" aria-label="Remove file">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        `;
+
+                // Wire event listener to clean circular X button
+                li.querySelector('.remove-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFile(fileObj.id);
+                });
+
+                fileListContainer.appendChild(li);
+            });
+
+            updateEstimatedSize();
+        }
+
+        // Remove single file item from array state
+        function removeFile(idToRemove) {
+            const fileIndex = stagedFiles.findIndex(f => f.id === idToRemove);
+            if (fileIndex !== -1) {
+                const removedName = stagedFiles[fileIndex].name;
+                stagedFiles.splice(fileIndex, 1);
+                updateStagingUI();
+                showToast(`Removed: ${removedName}`, 'info');
+            }
+        }
+
+        // Clear All Files logic
+        clearAllBtn.addEventListener('click', () => {
+            stagedFiles = [];
+            updateStagingUI(true);
+            showToast("All staged files cleared successfully.", "info");
+        });
+
+        // Build compiled output from state
+        function generateCompiledString() {
+            if (stagedFiles.length === 0) return "";
+
+            const stripComments = compressComments.checked;
+            const removeBlanks = compressBlanks.checked;
+            const trimWhitespace = compressSpacing.checked;
+
+            let compiledString = "";
+
+            stagedFiles.forEach(file => {
+                compiledString += `\n\n`;
+                compiledString += `// ===================================================================================\n`;
+                compiledString += `// ===================================================================================\n`;
+                compiledString += `//\n`;
+                compiledString += `//                               FILE: ${file.name}\n`;
+                compiledString += `//\n`;
+                compiledString += `// ===================================================================================\n`;
+                compiledString += `// ===================================================================================\n\n`;
+
+                let contentToAdd = file.content;
+
+                if (stripComments) {
+                    // Remove multi-line comments (/* ... */)
+                    contentToAdd = contentToAdd.replace(/\/\*[\s\S]*?\*\//g, '');
+                    // Remove HTML style comments (<!-- ... -->)
+                    contentToAdd = contentToAdd.replace(/<!--[\s\S]*?-->/g, '');
+                    // Remove single-line comments (// ... ) avoiding http:// protocols
+                    contentToAdd = contentToAdd.replace(/(?<!:)\/\/.*$/gm, '');
+                }
+
+                if (trimWhitespace || removeBlanks) {
+                    let lines = contentToAdd.split(/\r?\n/);
+                    if (trimWhitespace) {
+                        lines = lines.map(line => line.trim());
+                    }
+                    if (removeBlanks) {
+                        lines = lines.filter(line => line.length > 0);
+                    }
+                    contentToAdd = lines.join('\n');
+                }
+
+                compiledString += contentToAdd;
+                compiledString += `\n\n`;
+            });
+
+            return compiledString;
+        }
+
+        function updateEstimatedSize() {
+            const compiledString = generateCompiledString();
+            const sizeInBytes = new Blob([compiledString]).size;
+
+            let displaySize = `${(sizeInBytes / 1024).toFixed(1)} KB`;
+            if (sizeInBytes > 1024 * 1024) {
+                displaySize = `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
+            } else if (sizeInBytes === 0 && stagedFiles.length === 0) {
+                displaySize = `0.0 KB`;
+            }
+
+            if (estimatedSizeDisplay) {
+                estimatedSizeDisplay.textContent = displaySize;
+            }
+        }
+
+        // Dynamic bindings for compact compression toggles
+        [compressComments, compressBlanks, compressSpacing].forEach(box => {
+            box.addEventListener('change', updateEstimatedSize);
+        });
+
+        // Compile & Download Action handler
+        compileBtn.addEventListener('click', () => {
+            if (stagedFiles.length === 0) {
+                showToast("Please stage at least one file first.", "error");
+                return;
+            }
+
+            const compiledString = generateCompiledString();
+            const blob = new Blob([compiledString], { type: 'text/plain' });
+
+            let customName = filenameInput.value.trim() || 'compiled_project';
+            if (!customName.endsWith('.txt')) {
+                customName += '.txt';
+            }
+
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.style.display = 'none';
+            downloadLink.href = url;
+            downloadLink.download = customName;
+
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+
+            // Temporary button state change
+            const origBtnHTML = compileBtn.innerHTML;
+            compileBtn.innerHTML = `
+        <svg class="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span class="text-emerald-200">Compiled!</span>
+      `;
+            compileBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            compileBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+
+            showToast("Download started successfully", "success");
+
+            setTimeout(() => {
+                compileBtn.innerHTML = origBtnHTML;
+                compileBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                compileBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }, 2500);
+        });
+
+        // Select Folder button binding
+        folderBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            folderInput.click();
+        });
+
+        folderInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                processFileList(files);
+            }
+            e.target.value = '';
+        });
+    });
+</script>
+</body>
+</html>
