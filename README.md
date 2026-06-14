@@ -8,7 +8,7 @@ A fast, secure, and entirely client-side web utility designed to package entire 
 * **Smart Ignore List:** Automatically skips system and dependency folders like node_modules, .git, dist, and build when processing folders.
 * **Granular Code Compression:** Choose to strip code comments, remove blank lines, or trim excess whitespace before generating the final output document.
 * **Dynamic Warning Badges:** Automatically identifies binary files and flags individual files exceeding 1.0 MB with clean visual indicators.
-* **Integrated Command CLI:** Execute advanced batch actions, size calculations, and negative filters directly from the built-in search bar.
+* **Integrated CLI:** Execute advanced batch actions, size calculations, and negative filters directly from the built-in search bar.
 
 ## Search Bar and CLI Commands Reference
 
