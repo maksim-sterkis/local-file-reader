@@ -1,31 +1,115 @@
-# Local File Reader and Code Bundler
+# Local File Reader & Code Bundler
 
-A fast, secure, and entirely client-side web utility designed to package entire codebases or batches of files into a single structured text document. This tool is optimized to prepare project context for Large Language Models (LLMs) while dramatically stripping out unnecessary token waste.
+A high-performance, strictly browser-based utility designed to package entire codebases into a single, optimized text document. 
 
-## Features
+**The Core Application:** Preparing massive project context for Large Language Models (LLMs). This tool strips out token-wasting comments and whitespace, allowing you to feed maximum structural context into conversational AI models without hitting token limits or pasting files individually.
 
-* **Zero Server Overhead:** Runs entirely in your browser. Your source code never leaves your local machine.
-* **Smart Ignore List:** Automatically skips system and dependency folders like node_modules, .git, dist, and build when processing folders.
-* **Granular Code Compression:** Choose to strip code comments, remove blank lines, or trim excess whitespace before generating the final output document.
-* **Dynamic Warning Badges:** Automatically identifies binary files and flags individual files exceeding 1.0 MB with clean visual indicators.
-* **Integrated CLI:** Execute advanced batch actions, size calculations, and negative filters directly from the built-in search bar.
+---
 
-## Search Bar and CLI Commands Reference
+## Architectural Flow
 
-The main input bar acts as both a real-time visual filter and an execution prompt.
+The application processes user queries through a multi-stage Natural Language Processing pipeline before manipulating the virtual file staging area:
 
-### Live Filtering (Instant View Update)
-* **Text Search:** Type any keyword or partial file name to show only matching paths.
-* **Negative Filter:** Type a minus sign or exclamation mark before a word (e.g., `-test` or `!mock`) to temporarily hide matching files from the visual list.
-* **Size Filter:** Type comparison operators (e.g., `>100kb` or `<5kb`) to instantly isolate specific file sizes in the list view.
+```text
+      [User Natural Language Expression]
+                      │
+                      ▼
+        ┌──────────────────────────┐
+        │   Parenthesis Control    │ ──► Auto-balances unmatched brackets
+        └──────────────────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────┐
+        │  Token Protection Layer  │ ──► Insulates explicit text strings & paths
+        └──────────────────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────┐
+        │ Compromise.js Lemmatizer │ ──► Extracts semantic verb intent
+        └──────────────────────────┘
+                      │
+                      ▼
+        ┌──────────────────────────┐
+        │   Recursive AST Parser   │ ──► Maps structural precedence (AND, OR, NOT)
+        └──────────────────────────┘
+                      │
+       ┌──────────────┴──────────────┐
+       ▼                             ▼
+ [Intent: VIEW]             [Intent: KEEP/REMOVE]
+       │                             │
+       ▼                             ▼
+Real-Time Filter UI         Batch Array Mutations
+```
+---
 
-### Execution Commands (Type and Press Enter)
-* **Remove Specific Extension:** Type `.ext remove` or `.ext r` (e.g., `.html remove`) to delete all matching files from the staging area.
-* **Keep Only Specific Extension:** Type `keep .ext` or `.ext keep` (e.g., `keep .js`) to wipe out every staged file except those matching the target extension.
-* **Nuke Subdirectories:** Type `path/ remove` or `remove path/` (e.g., `components/ui/ remove`) to instantly drop a specific nested folder.
-* **Purge Empty Files:** Type `remove empty` or `empty remove` to sweep out ghost files or blank placeholders.
-* **Clear Registry Flags:** Type `remove binary` or `remove large` to clear targeted warning groups from your staging area in bulk.
+## Core Capabilities
+
+| Feature | Description |
+| :--- | :--- |
+| **Zero Server Overhead** | Runs entirely in the browser environment utilizing the HTML5 File API. Data privacy is absolute; source code never touches an external server. |
+| **Smart Ignore Pipeline** | Automatically circumvents common, high-volume dependency directories (node_modules, .git, dist, build). |
+| **Granular Code Compression** | Employs configurable regex toggles to strip code comments, remove blank lines, and trim excess whitespace prior to compilation. |
+| **Intelligent Flagging** | Scans file headers and payloads to automatically identify and badge binary contents or abnormally large files (>1.0 MB). |
+| **AST NLP Engine** | Translates plain-English constraints into complex file-filtering actions, rendering a visual intent-mirroring UI before execution. |
+| **Real-Time Metrics** | Calculates and displays the estimated combined output payload size dynamically as you manipulate the staging area. |
+
+---
+
+## Usage Guide
+
+1. **Initialize:** Open the index.html file in any modern web browser. No local server environment is required.
+2. **Stage:** Drag and drop your project directory into the designated drop zone.
+3. **Filter:** Utilize the unified search interface to narrow down the files necessary for your target context (see Command Reference below).
+4. **Optimize:** Select the required compression parameters via the interface checkboxes (Strip Comments, Remove Blank Lines, Trim Whitespace).
+5. **Compile:** Assign a nomenclature to your payload and execute **Compile & Download**.
+6. **Inject:** Upload the resulting structured .txt document directly to your preferred LLM.
+
+---
+
+## Command Reference
+
+The primary input interface functions as a live string filter, a standard Command-Line Interface (CLI), and a Natural Language Processing (NLP) gateway.
+
+### Advanced NLP Commands (ask:)
+Prefix your input with "ask:" to route the query through the Compromise.js NLP engine and AST parser.
+
+| Syntax Example | System Action |
+| :--- | :--- |
+| `ask: keep only .js files` | Isolates the staging area strictly to JavaScript files. |
+| `ask: remove files over 50kb` | Sweeps the staging array for sizes exceeding the declared byte limit. |
+| `ask: keep files inside src mentioning auth` | Processes a dual-constraint search based on path inclusion and string matches. |
+| `ask: remove binary files` | Purges all non-plaintext objects flagged during the initial staging phase. |
+
+### Standard CLI Execution (Press Enter)
+Standard syntax patterns used for rapid, absolute batch actions.
+
+| Command Syntax | Example | Execution |
+| :--- | :--- | :--- |
+| `.ext remove` | `.html remove` | Deletes all files sharing the specific extension from staging. |
+| `keep .ext` | `keep .ts` | Wipes the entire staging area except objects matching the target extension. |
+| `path/ remove` | `components/ remove` | Drops all nested files belonging to the declared directory. |
+| `remove empty` | `remove empty` | Sweeps the array for files containing zero functional characters. |
+
+### Live Visual Filtering (Instant)
+Sub-commands that mutate the visual DOM representation without permanently mutating the underlying staging array.
+
+| Filter Syntax | Example | Behavior |
+| :--- | :--- | :--- |
+| `String` | `config` | Renders only files containing "config" in the path or filename. |
+| `-String` | `-mock` | Temporarily omits matching strings from the DOM list. |
+| `>Size` | `>100kb` | Instantly isolates files evaluating true against the size operator. |
+
+---
+
+## System Limitations
+
+* **Memory Constraints:** Processing happens entirely in-memory within the browser tab. Dragging monolithic, multi-gigabyte codebases directly into the drop zone may result in an Out of Memory browser crash. Best used on scoped microservices or specific sub-directories.
+* **Binary Processing Limits:** The compiler is strictly designed for plaintext. While it intelligently flags binaries (images, PDFs, executables), attempting to force-compile them into the final .txt output will result in garbled encoding.
+* **Regex Comment Stripping Constraints:** The comment removal tool relies on standard regex evaluations (targeting //, /* */, and ). It may occasionally misidentify complex string literals containing identical comment-like syntax.
+* **Browser Compatibility:** Requires a modern browser (Chrome, Edge, Firefox, Safari) fully supporting the HTML5 File API and ES6+ JavaScript parameters. 
+
+---
 
 ## Deployment
 
-This project is fully optimized for static hosting solutions like GitHub Pages. Because it relies entirely on local browser APIs, Tailwind CDN, and client-side processing, you can deploy it instantly by naming the file index.html and uploading it to a public GitHub repository.
+Because the architecture relies entirely on native browser APIs and external CDNs for CSS/NLP processing, this utility is completely decoupled from backend infrastructure. It can be hosted statically and instantly by uploading the index.html file to GitHub Pages, Vercel, or an AWS S3 bucket.
