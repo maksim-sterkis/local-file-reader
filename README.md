@@ -4,6 +4,8 @@ A high-performance, strictly browser-based utility designed to package entire co
 
 **The Core Application:** Preparing massive project context for Large Language Models (LLMs). This tool strips out token-wasting comments and whitespace, allowing you to feed maximum structural context into conversational AI models without hitting token limits or pasting files individually.
 
+**Live Demo:** [https://maksim-sterkis.github.io/local-file-reader/](https://maksim-sterkis.github.io/local-file-reader/)
+
 ---
 
 ## Architectural Flow
