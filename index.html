@@ -1,31 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Local File Reader</title>
-  <!-- Using Tailwind CSS for modern, responsive styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Compromise.js library for high-speed, lightweight NLP parsing -->
-  <script src="https://unpkg.com/compromise"></script>
-  <style>
-    /* Custom scrollbar for the output area */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local File Reader</title>
+    <!-- Using Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Compromise.js library for high-speed, lightweight NLP parsing -->
+    <script src="https://unpkg.com/compromise"></script>
+    <style>
+        /* Custom scrollbar for the output area */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen text-gray-800 font-sans p-6 md:p-12 relative">
 
@@ -34,1037 +34,1090 @@
 
 <!-- Processing Loader Overlay -->
 <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
-  <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-4 max-w-xs w-full text-center">
-    <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-    <p id="loading-text" class="text-gray-700 font-semibold text-sm">Processing files...</p>
-    <div class="w-full bg-gray-100 rounded-full h-1.5">
-      <div id="loading-progress" class="bg-blue-600 h-1.5 rounded-full transition-all duration-100" style="width: 0%"></div>
+    <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center space-y-4 max-w-xs w-full text-center">
+        <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p id="loading-text" class="text-gray-700 font-semibold text-sm">Processing files...</p>
+        <div class="w-full bg-gray-100 rounded-full h-1.5">
+            <div id="loading-progress" class="bg-blue-600 h-1.5 rounded-full transition-all duration-100" style="width: 0%"></div>
+        </div>
     </div>
-  </div>
+</div>
+
+<!-- Paste File Modal Overlay -->
+<div id="paste-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col space-y-4 w-full max-w-2xl mx-4">
+        <div class="flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-800">Paste File Contents</h3>
+            <button id="close-paste-icon" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <div class="flex gap-4">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 mb-1">File Name</label>
+                <input type="text" id="paste-filename" placeholder="e.g. index" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition-all text-sm font-medium">
+            </div>
+            <div class="w-1/3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Extension</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 font-bold pointer-events-none">.</span>
+                    <input type="text" id="paste-extension" placeholder="js" class="w-full border border-gray-300 rounded-lg pl-6 pr-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm transition-all text-sm font-medium">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">File Content (Code)</label>
+            <textarea id="paste-content" rows="12" placeholder="Paste your code or text here..." class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm shadow-sm transition-all resize-y whitespace-pre"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+            <button id="close-paste-btn" class="px-5 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium">Cancel</button>
+            <button id="submit-paste-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors font-semibold flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>Add File</span>
+            </button>
+        </div>
+    </div>
 </div>
 
 <div class="max-w-3xl mx-auto space-y-8">
 
-  <!-- Header -->
-  <header class="text-center">
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">Local File Reader</h1>
-    <p class="text-gray-500 font-medium">Drag and drop text-based files or select folders to read, clean, and combine your project codes.</p>
-  </header>
+    <!-- Header -->
+    <header class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Local File Reader</h1>
+        <p class="text-gray-500 font-medium">Drag and drop text-based files, select folders, or paste code directly to read, clean, and combine your projects.</p>
+    </header>
 
-  <!-- Drop Zone -->
-  <div id="drop-zone"
-       class="border-4 border-dashed border-gray-300 rounded-2xl p-16 flex flex-col items-center justify-center transition-all duration-200 ease-in-out bg-white shadow-sm text-gray-500 min-h-[250px] cursor-pointer hover:border-blue-500 hover:bg-blue-50/20 group">
-    <svg class="w-16 h-16 mb-4 text-gray-400 drop-icon transition-colors duration-200 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-    </svg>
-    <span class="text-lg font-semibold group-hover:text-blue-600 transition-colors">Drag & Drop files or directories here</span>
-    <span class="text-sm mt-1 text-gray-400">Supports any text-based format (.txt, .md, .csv, code files, etc.)</span>
-  </div>
-
-  <!-- Folder Selection Area -->
-  <div class="flex items-center justify-center space-x-4 py-2">
-    <div class="h-px bg-gray-300 flex-1"></div>
-    <span class="text-sm text-gray-400 font-semibold uppercase tracking-wider">or</span>
-    <div class="h-px bg-gray-300 flex-1"></div>
-  </div>
-
-  <div class="flex justify-center pb-2">
-    <button id="folder-btn" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-medium py-2.5 px-6 rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-gray-100 flex items-center space-x-2">
-      <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-      <span>Select Folder</span>
-    </button>
-    <!-- Hidden input for folder selection -->
-    <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden" />
-  </div>
-
-  <!-- Staging Area (Hidden by default) -->
-  <div id="staging-area" class="hidden opacity-0 transition-opacity duration-300 ease-in-out bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-
-    <!-- Top Bar with Search & Controls -->
-    <div class="bg-gray-100 border-b border-gray-200 px-6 py-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-          <span>Staged Files</span>
-          <span id="file-count" class="text-sm text-gray-500 ml-2">(0)</span>
-        </h2>
-        <button id="clear-all-btn" class="text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200 transition-colors hidden" type="button">
-          Clear All
-        </button>
-      </div>
-
-      <!-- Search input -->
-      <div class="relative">
-        <input type="text" id="search-input" placeholder="Filter by text, or command: 'ask: keep only .js inside models mentioning auth'" class="w-full text-xs border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 shadow-sm transition-all font-medium" />
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Real-time Intent Mirroring View Badge Row -->
-      <div id="intent-mirroring-container" class="hidden transition-all duration-300"></div>
+    <!-- Drop Zone -->
+    <div id="drop-zone"
+         class="border-4 border-dashed border-gray-300 rounded-2xl p-16 flex flex-col items-center justify-center transition-all duration-200 ease-in-out bg-white shadow-sm text-gray-500 min-h-[250px] cursor-pointer hover:border-blue-500 hover:bg-blue-50/20 group">
+        <svg class="w-16 h-16 mb-4 text-gray-400 drop-icon transition-colors duration-200 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <span class="text-lg font-semibold group-hover:text-blue-600 transition-colors">Drag & Drop files or directories here</span>
+        <span class="text-sm mt-1 text-gray-400">Supports any text-based format (.txt, .md, .csv, code files, etc.)</span>
     </div>
 
-    <!-- Dynamic Staged File List -->
-    <ul id="staged-file-list" class="divide-y divide-gray-100 max-h-[350px] overflow-y-auto p-2">
-      <!-- List items will dynamically populate here -->
-    </ul>
-
-    <!-- Compile Footer -->
-    <div class="bg-gray-50 border-t border-gray-200 px-6 py-5 flex flex-col space-y-4">
-
-      <!-- Compact Optimization Options -->
-      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
-        <span class="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Options:</span>
-        <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
-          <input type="checkbox" id="compress-comments" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
-          <span class="select-none font-medium">Strip Comments</span>
-        </label>
-        <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
-          <input type="checkbox" id="compress-blanks" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
-          <span class="select-none font-medium">Remove Blank Lines</span>
-        </label>
-        <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
-          <input type="checkbox" id="compress-spacing" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
-          <span class="select-none font-medium">Trim Whitespace</span>
-        </label>
-      </div>
-
-      <!-- Compile Controls -->
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
-        <div class="flex items-center space-x-3 w-full sm:w-auto">
-          <span id="estimated-size" title="Estimated Combined Output File Size" class="text-xs font-bold text-gray-500 bg-gray-200/60 px-3 py-2 rounded-lg border border-gray-300 shadow-inner whitespace-nowrap cursor-help">0.0 KB</span>
-          <input type="text" id="filename-input" placeholder="Name your project..." class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm w-full sm:w-48 shadow-sm font-medium" />
-        </div>
-        <button id="compile-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition-all focus:ring-4 focus:ring-blue-100 flex items-center justify-center space-x-2 whitespace-nowrap">
-          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-          <span>Compile & Download</span>
-        </button>
-      </div>
+    <!-- Folder Selection Area -->
+    <div class="flex items-center justify-center space-x-4 py-2">
+        <div class="h-px bg-gray-300 flex-1"></div>
+        <span class="text-sm text-gray-400 font-semibold uppercase tracking-wider">or</span>
+        <div class="h-px bg-gray-300 flex-1"></div>
     </div>
-  </div>
+
+    <div class="flex justify-center pb-2 gap-4 flex-wrap">
+        <button id="folder-btn" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-medium py-2.5 px-6 rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-gray-100 flex items-center space-x-2">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+            <span>Select Folder</span>
+        </button>
+        <button id="paste-btn" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-blue-600 font-medium py-2.5 px-6 rounded-xl shadow-sm transition-all focus:ring-4 focus:ring-gray-100 flex items-center space-x-2">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            <span>Paste Code</span>
+        </button>
+        <!-- Hidden input for folder selection -->
+        <input type="file" id="folder-input" webkitdirectory directory multiple class="hidden" />
+    </div>
+
+    <!-- Staging Area (Hidden by default) -->
+    <div id="staging-area" class="hidden opacity-0 transition-opacity duration-300 ease-in-out bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+        <!-- Top Bar with Search & Controls -->
+        <div class="bg-gray-100 border-b border-gray-200 px-6 py-4 space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <span>Staged Files</span>
+                    <span id="file-count" class="text-sm text-gray-500 ml-2">(0)</span>
+                </h2>
+                <button id="clear-all-btn" class="text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border border-red-200 transition-colors hidden" type="button">
+                    Clear All
+                </button>
+            </div>
+
+            <!-- Search input -->
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="Filter by text, or command: 'ask: keep only .js inside models mentioning auth'" class="w-full text-xs border border-gray-300 rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 shadow-sm transition-all font-medium" />
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Real-time Intent Mirroring View Badge Row -->
+            <div id="intent-mirroring-container" class="hidden transition-all duration-300"></div>
+        </div>
+
+        <!-- Dynamic Staged File List -->
+        <ul id="staged-file-list" class="divide-y divide-gray-100 max-h-[350px] overflow-y-auto p-2">
+            <!-- List items will dynamically populate here -->
+        </ul>
+
+        <!-- Compile Footer -->
+        <div class="bg-gray-50 border-t border-gray-200 px-6 py-5 flex flex-col space-y-4">
+
+            <!-- Compact Optimization Options -->
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-600">
+                <span class="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Options:</span>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
+                    <input type="checkbox" id="compress-comments" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
+                    <span class="select-none font-medium">Strip Comments</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
+                    <input type="checkbox" id="compress-blanks" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
+                    <span class="select-none font-medium">Remove Blank Lines</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors">
+                    <input type="checkbox" id="compress-spacing" class="w-3.5 h-3.5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500" checked />
+                    <span class="select-none font-medium">Trim Whitespace</span>
+                </label>
+            </div>
+
+            <!-- Compile Controls -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <span id="estimated-size" title="Estimated Combined Output File Size" class="text-xs font-bold text-gray-500 bg-gray-200/60 px-3 py-2 rounded-lg border border-gray-300 shadow-inner whitespace-nowrap cursor-help">0.0 KB</span>
+                    <input type="text" id="filename-input" placeholder="Name your project..." class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm w-full sm:w-40 shadow-sm font-medium" />
+                    <span class="text-gray-400 font-bold">.</span>
+                    <input type="text" id="extension-input" placeholder="txt" value="txt" class="border border-gray-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm w-16 sm:w-20 shadow-sm font-medium text-center" />
+                </div>
+                <button id="compile-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-sm transition-all focus:ring-4 focus:ring-blue-100 flex items-center justify-center space-x-2 whitespace-nowrap">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Compile & Download</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const dropZone = document.getElementById('drop-zone');
-    const dropIcon = dropZone.querySelector('.drop-icon');
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropZone = document.getElementById('drop-zone');
+        const dropIcon = dropZone.querySelector('.drop-icon');
 
-    // Central Modular Warning Types Registry
-    const WARNING_TYPES = {
-      binary: {
-        key: 'isBinary',
-        label: 'Binary',
-        aliases: ['binary', 'binary file', 'binaryfiles', 'binaryfile'],
-        badgeBg: 'bg-amber-50',
-        badgeText: 'text-amber-800',
-        badgeBorder: 'border-amber-200',
-        title: 'Binary contents detected.'
-      },
-      large: {
-        key: 'isLarge',
-        label: 'Large File',
-        aliases: ['large', 'large file', 'largefiles', 'largefile'],
-        badgeBg: 'bg-rose-50',
-        badgeText: 'text-rose-800',
-        badgeBorder: 'border-rose-200',
-        title: 'File is over 1.0 MB.'
-      }
-    };
+        // Central Modular Warning Types Registry
+        const WARNING_TYPES = {
+            binary: {
+                key: 'isBinary',
+                label: 'Binary',
+                aliases: ['binary', 'binary file', 'binaryfiles', 'binaryfile'],
+                badgeBg: 'bg-amber-50',
+                badgeText: 'text-amber-800',
+                badgeBorder: 'border-amber-200',
+                title: 'Binary contents detected.'
+            },
+            large: {
+                key: 'isLarge',
+                label: 'Large File',
+                aliases: ['large', 'large file', 'largefiles', 'largefile'],
+                badgeBg: 'bg-rose-50',
+                badgeText: 'text-rose-800',
+                badgeBorder: 'border-rose-200',
+                title: 'File is over 1.0 MB.'
+            }
+        };
 
-    // Recognized file extensions dictionary for semantic expansion
-    const recognizedExtensions = [
-      'js', 'css', 'html', 'py', 'cpp', 'hpp', 'c', 'h', 'ts', 'tsx', 'jsx', 'md', 'txt', 'json',
-      'spv', 'frag', 'vert', 'glb', 'gltf', 'java', 'cs', 'go', 'rs', 'sh', 'yml', 'yaml', 'xml',
-      'sql', 'ini', 'cfg', 'bat', 'csv', 'env', 'vue', 'svelte', 'php', 'rb', 'swift', 'kt',
-      'dart', 'mjs', 'cjs', 'wasm', 'cc', 'cxx', 'hxx', 'cmake', 'make', 'bash', 'zsh',
-      'dockerfile', 'properties', 'toml', 'lock', 'log', 'tex', 'pdf', 'png', 'jpg', 'jpeg', 'gif',
-      'webp', 'svg', 'ico', 'mp3', 'wav', 'mp4', 'zip', 'tar', 'gz'
-    ];
+        // Recognized file extensions dictionary for semantic expansion
+        const recognizedExtensions = [
+            'js', 'css', 'html', 'py', 'cpp', 'hpp', 'c', 'h', 'ts', 'tsx', 'jsx', 'md', 'txt', 'json',
+            'spv', 'frag', 'vert', 'glb', 'gltf', 'java', 'cs', 'go', 'rs', 'sh', 'yml', 'yaml', 'xml',
+            'sql', 'ini', 'cfg', 'bat', 'csv', 'env', 'vue', 'svelte', 'php', 'rb', 'swift', 'kt',
+            'dart', 'mjs', 'cjs', 'wasm', 'cc', 'cxx', 'hxx', 'cmake', 'make', 'bash', 'zsh',
+            'dockerfile', 'properties', 'toml', 'lock', 'log', 'tex', 'pdf', 'png', 'jpg', 'jpeg', 'gif',
+            'webp', 'svg', 'ico', 'mp3', 'wav', 'mp4', 'zip', 'tar', 'gz'
+        ];
 
-    // State Management for Staged Files
-    let stagedFiles = [];
-    let fileIdCounter = 0;
+        // State Management for Staged Files
+        let stagedFiles = [];
+        let fileIdCounter = 0;
 
-    // Structured Parsing & Evaluation States
-    let activeAST = null;
-    let activeIntent = 'VIEW'; // VIEW (Filter Only), KEEP, or REMOVE
+        // Structured Parsing & Evaluation States
+        let activeAST = null;
+        let activeIntent = 'VIEW'; // VIEW (Filter Only), KEEP, or REMOVE
 
-    // Elements
-    const stagingArea = document.getElementById('staging-area');
-    const fileListContainer = document.getElementById('staged-file-list');
-    const fileCountDisplay = document.getElementById('file-count');
-    const clearAllBtn = document.getElementById('clear-all-btn');
-    const compileBtn = document.getElementById('compile-btn');
-    const filenameInput = document.getElementById('filename-input');
-    const folderBtn = document.getElementById('folder-btn');
-    const folderInput = document.getElementById('folder-input');
-    const estimatedSizeDisplay = document.getElementById('estimated-size');
-    const searchInput = document.getElementById('search-input');
+        // Elements
+        const stagingArea = document.getElementById('staging-area');
+        const fileListContainer = document.getElementById('staged-file-list');
+        const fileCountDisplay = document.getElementById('file-count');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const compileBtn = document.getElementById('compile-btn');
+        const filenameInput = document.getElementById('filename-input');
+        const extensionInput = document.getElementById('extension-input');
+        const folderBtn = document.getElementById('folder-btn');
+        const folderInput = document.getElementById('folder-input');
+        const pasteBtn = document.getElementById('paste-btn');
+        const estimatedSizeDisplay = document.getElementById('estimated-size');
+        const searchInput = document.getElementById('search-input');
 
-    // Compression Toggles
-    const compressComments = document.getElementById('compress-comments');
-    const compressBlanks = document.getElementById('compress-blanks');
-    const compressSpacing = document.getElementById('compress-spacing');
+        // Paste Modal Elements
+        const pasteModal = document.getElementById('paste-modal');
+        const closePasteBtn = document.getElementById('close-paste-btn');
+        const closePasteIcon = document.getElementById('close-paste-icon');
+        const submitPasteBtn = document.getElementById('submit-paste-btn');
+        const pasteFilename = document.getElementById('paste-filename');
+        const pasteExtension = document.getElementById('paste-extension');
+        const pasteContent = document.getElementById('paste-content');
 
-    // Custom Toast Notification System
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
+        // Compression Toggles
+        const compressComments = document.getElementById('compress-comments');
+        const compressBlanks = document.getElementById('compress-blanks');
+        const compressSpacing = document.getElementById('compress-spacing');
 
-      let bgClass = "bg-emerald-600";
-      if (type === 'error') {
-        bgClass = "bg-rose-600";
-      } else if (type === 'info') {
-        bgClass = "bg-blue-600";
-      }
+        // Custom Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
 
-      toast.className = `flex items-center ${bgClass} text-white px-4 py-3 rounded-xl shadow-lg transform -translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto max-w-sm z-50`;
-      toast.innerHTML = `<p class="text-xs font-semibold">${message}</p>`;
+            let bgClass = "bg-emerald-600";
+            if (type === 'error') {
+                bgClass = "bg-rose-600";
+            } else if (type === 'info') {
+                bgClass = "bg-blue-600";
+            }
 
-      container.appendChild(toast);
-      toast.offsetHeight;
+            toast.className = `flex items-center ${bgClass} text-white px-4 py-3 rounded-xl shadow-lg transform -translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto max-w-sm z-50`;
+            toast.innerHTML = `<p class="text-xs font-semibold">${message}</p>`;
 
-      toast.classList.remove('-translate-y-2', 'opacity-0');
-      toast.classList.add('translate-y-0');
+            container.appendChild(toast);
+            toast.offsetHeight;
 
-      setTimeout(() => {
-        toast.classList.remove('translate-y-0');
-        toast.classList.add('-translate-y-6', 'opacity-0');
-        setTimeout(() => {
-          if (toast.parentNode) {
-            container.removeChild(toast);
-          }
-        }, 300);
-      }, 3500);
-    }
+            toast.classList.remove('-translate-y-2', 'opacity-0');
+            toast.classList.add('translate-y-0');
 
-    // Processing loading overlay management
-    function showLoading(show, current = 0, total = 0) {
-      const overlay = document.getElementById('loading-overlay');
-      const text = document.getElementById('loading-text');
-      const progress = document.getElementById('loading-progress');
-      if (show) {
-        overlay.classList.remove('hidden');
-        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        text.textContent = `Processing files: ${current} of ${total}`;
-        const pct = total > 0 ? (current / total) * 100 : 0;
-        progress.style.width = `${pct}%`;
-      } else {
-        overlay.classList.add('opacity-0');
-        setTimeout(() => {
-          overlay.classList.add('hidden');
-          progress.style.width = '0%';
-        }, 300);
-      }
-    }
-
-    function checkIsBinary(file, content) {
-      const binaryExtensions = [
-        'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico', 'pdf', 'zip', 'rar', 'tar', 'gz', '7z',
-        'exe', 'dll', 'so', 'dylib', 'bin', 'dmg', 'mp3', 'wav', 'mp4', 'mkv', 'avi', 'mov', 'flv',
-        'webm', 'woff', 'woff2', 'eot', 'ttf', 'otf', 'docx', 'xlsx', 'pptx', 'class', 'jar', 'pyc'
-      ];
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (binaryExtensions.includes(ext)) return true;
-
-      const sample = content.slice(0, 1000);
-      for (let i = 0; i < sample.length; i++) {
-        const charCode = sample.charCodeAt(i);
-        if (charCode === 0 || (charCode < 9 && charCode > 0) || (charCode > 10 && charCode < 13) || (charCode > 13 && charCode < 32)) {
-          return true;
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0');
+                toast.classList.add('-translate-y-6', 'opacity-0');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3500);
         }
-      }
-      return false;
-    }
 
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, preventDefaults, false);
-      document.body.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropZone.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropZone.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight() {
-      dropZone.classList.add('border-blue-500', 'bg-blue-50/50', 'text-blue-600');
-      dropZone.classList.remove('border-gray-300', 'text-gray-500');
-      dropIcon.classList.add('text-blue-500');
-      dropIcon.classList.remove('text-gray-400');
-    }
-
-    function unhighlight() {
-      dropZone.classList.remove('border-blue-500', 'bg-blue-50/50', 'text-blue-600');
-      dropZone.classList.add('border-gray-300', 'text-gray-500');
-      dropIcon.classList.remove('text-blue-500');
-      dropIcon.classList.add('text-gray-400');
-    }
-
-    dropZone.addEventListener('click', () => folderInput.click());
-    dropZone.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-      const dt = e.dataTransfer;
-      if (dt.files && dt.files.length > 0) {
-        processFileList(dt.files);
-      }
-    }
-
-    async function processFileList(filesList) {
-      const files = Array.from(filesList);
-      if (files.length === 0) return;
-
-      const ignoreList = ['node_modules/', '.git/', '.DS_Store', 'dist/', 'build/'];
-      const filesToProcess = [];
-      let skippedCount = 0;
-
-      files.forEach(file => {
-        const displayPath = file.webkitRelativePath || file.name;
-        const pathLower = displayPath.toLowerCase();
-        if (ignoreList.some(item => pathLower.includes(item.toLowerCase()))) {
-          skippedCount++;
-        } else {
-          filesToProcess.push(file);
+        // Processing loading overlay management
+        function showLoading(show, current = 0, total = 0) {
+            const overlay = document.getElementById('loading-overlay');
+            const text = document.getElementById('loading-text');
+            const progress = document.getElementById('loading-progress');
+            if (show) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                text.textContent = `Processing files: ${current} of ${total}`;
+                const pct = total > 0 ? (current / total) * 100 : 0;
+                progress.style.width = `${pct}%`;
+            } else {
+                overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    progress.style.width = '0%';
+                }, 300);
+            }
         }
-      });
 
-      if (filesToProcess.length === 0) {
-        if (skippedCount > 0) showToast(`Skipped ${skippedCount} system/dependency files`, 'info');
-        return;
-      }
+        function checkIsBinary(file, content) {
+            const binaryExtensions = [
+                'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico', 'pdf', 'zip', 'rar', 'tar', 'gz', '7z',
+                'exe', 'dll', 'so', 'dylib', 'bin', 'dmg', 'mp3', 'wav', 'mp4', 'mkv', 'avi', 'mov', 'flv',
+                'webm', 'woff', 'woff2', 'eot', 'ttf', 'otf', 'docx', 'xlsx', 'pptx', 'class', 'jar', 'pyc'
+            ];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (binaryExtensions.includes(ext)) return true;
 
-      let total = filesToProcess.length;
-      let completed = 0;
-      let replacedCount = 0;
+            const sample = content.slice(0, 1000);
+            for (let i = 0; i < sample.length; i++) {
+                const charCode = sample.charCodeAt(i);
+                if (charCode === 0 || (charCode < 9 && charCode > 0) || (charCode > 10 && charCode < 13) || (charCode > 13 && charCode < 32)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
-      showLoading(true, completed, total);
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
 
-      const promises = filesToProcess.map(file => {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const textContent = e.target.result;
-            const displayPath = file.webkitRelativePath || file.name;
-            const isBinaryDetected = checkIsBinary(file, textContent);
-            const isLargeFile = file.size > 1024 * 1024;
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropZone.classList.add('border-blue-500', 'bg-blue-50/50', 'text-blue-600');
+            dropZone.classList.remove('border-gray-300', 'text-gray-500');
+            dropIcon.classList.add('text-blue-500');
+            dropIcon.classList.remove('text-gray-400');
+        }
+
+        function unhighlight() {
+            dropZone.classList.remove('border-blue-500', 'bg-blue-50/50', 'text-blue-600');
+            dropZone.classList.add('border-gray-300', 'text-gray-500');
+            dropIcon.classList.remove('text-blue-500');
+            dropIcon.classList.add('text-gray-400');
+        }
+
+        dropZone.addEventListener('click', () => folderInput.click());
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            if (dt.files && dt.files.length > 0) {
+                processFileList(dt.files);
+            }
+        }
+
+        async function processFileList(filesList) {
+            const files = Array.from(filesList);
+            if (files.length === 0) return;
+
+            const ignoreList = ['node_modules/', '.git/', '.DS_Store', 'dist/', 'build/'];
+            const filesToProcess = [];
+            let skippedCount = 0;
+
+            files.forEach(file => {
+                const displayPath = file.webkitRelativePath || file.name;
+                const pathLower = displayPath.toLowerCase();
+                if (ignoreList.some(item => pathLower.includes(item.toLowerCase()))) {
+                    skippedCount++;
+                } else {
+                    filesToProcess.push(file);
+                }
+            });
+
+            if (filesToProcess.length === 0) {
+                if (skippedCount > 0) showToast(`Skipped ${skippedCount} system/dependency files`, 'info');
+                return;
+            }
+
+            let total = filesToProcess.length;
+            let completed = 0;
+            let replacedCount = 0;
+
+            showLoading(true, completed, total);
+
+            const promises = filesToProcess.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const textContent = e.target.result;
+                        const displayPath = file.webkitRelativePath || file.name;
+                        const isBinaryDetected = checkIsBinary(file, textContent);
+                        const isLargeFile = file.size > 1024 * 1024;
+
+                        const newFileObj = {
+                            id: fileIdCounter++,
+                            name: displayPath,
+                            content: textContent,
+                            size: (file.size / 1024).toFixed(1) + ' KB',
+                            sizeBytes: file.size,
+                            isBinary: isBinaryDetected,
+                            isLarge: isLargeFile
+                        };
+
+                        const duplicateIndex = stagedFiles.findIndex(f => f.name === displayPath);
+                        if (duplicateIndex !== -1) {
+                            stagedFiles[duplicateIndex] = newFileObj;
+                            replacedCount++;
+                        } else {
+                            stagedFiles.push(newFileObj);
+                        }
+
+                        completed++;
+                        showLoading(true, completed, total);
+                        resolve();
+                    };
+                    reader.onerror = function() {
+                        showToast(`Could not read: ${file.name}`, 'error');
+                        completed++;
+                        showLoading(true, completed, total);
+                        resolve();
+                    };
+                    reader.readAsText(file);
+                });
+            });
+
+            await Promise.all(promises);
+            showLoading(false);
+            updateStagingUI();
+
+            if (replacedCount > 0) {
+                showToast(`Staged ${total} file(s) with ${replacedCount} updated duplicate(s)`, 'info');
+            } else {
+                showToast(`Successfully staged ${total} file(s)`, 'success');
+            }
+
+            if (skippedCount > 0) {
+                setTimeout(() => showToast(`Skipped ${skippedCount} system/dependency files`, 'info'), 800);
+            }
+        }
+
+        // =========================================================================
+        // PASTE MODAL LOGIC
+        // =========================================================================
+
+        function openPasteModal() {
+            pasteModal.classList.remove('hidden');
+            setTimeout(() => pasteModal.classList.remove('opacity-0'), 10);
+            pasteFilename.focus();
+        }
+
+        function closePasteModal() {
+            pasteModal.classList.add('opacity-0');
+            setTimeout(() => {
+                pasteModal.classList.add('hidden');
+                pasteFilename.value = '';
+                pasteExtension.value = '';
+                pasteContent.value = '';
+            }, 300);
+        }
+
+        pasteBtn.addEventListener('click', openPasteModal);
+        closePasteBtn.addEventListener('click', closePasteModal);
+        closePasteIcon.addEventListener('click', closePasteModal);
+
+        submitPasteBtn.addEventListener('click', () => {
+            let name = pasteFilename.value.trim() || 'untitled';
+            let ext = pasteExtension.value.trim() || 'txt';
+
+            // Clean up the extension formatting
+            if (ext.startsWith('.')) ext = ext.substring(1);
+
+            const content = pasteContent.value;
+            if (!content) {
+                showToast("Please paste some content before adding.", "error");
+                return;
+            }
+
+            // Build final name
+            let fullName = name;
+            if (!name.toLowerCase().endsWith('.' + ext.toLowerCase())) {
+                fullName = `${name}.${ext}`;
+            }
+
+            const sizeBytes = new Blob([content]).size;
+            const isLargeFile = sizeBytes > 1024 * 1024;
 
             const newFileObj = {
-              id: fileIdCounter++,
-              name: displayPath,
-              content: textContent,
-              size: (file.size / 1024).toFixed(1) + ' KB',
-              sizeBytes: file.size,
-              isBinary: isBinaryDetected,
-              isLarge: isLargeFile
+                id: fileIdCounter++,
+                name: fullName,
+                content: content,
+                size: (sizeBytes / 1024).toFixed(1) + ' KB',
+                sizeBytes: sizeBytes,
+                isBinary: false, // Text pasted is inherently not binary
+                isLarge: isLargeFile
             };
 
-            const duplicateIndex = stagedFiles.findIndex(f => f.name === displayPath);
+            const duplicateIndex = stagedFiles.findIndex(f => f.name === fullName);
             if (duplicateIndex !== -1) {
-              stagedFiles[duplicateIndex] = newFileObj;
-              replacedCount++;
+                stagedFiles[duplicateIndex] = newFileObj;
+                showToast(`Updated duplicate pasted file: ${fullName}`, 'info');
             } else {
-              stagedFiles.push(newFileObj);
+                stagedFiles.push(newFileObj);
+                showToast(`Added pasted file: ${fullName}`, 'success');
             }
 
-            completed++;
-            showLoading(true, completed, total);
-            resolve();
-          };
-          reader.onerror = function() {
-            showToast(`Could not read: ${file.name}`, 'error');
-            completed++;
-            showLoading(true, completed, total);
-            resolve();
-          };
-          reader.readAsText(file);
+            updateStagingUI();
+            closePasteModal();
         });
-      });
 
-      await Promise.all(promises);
-      showLoading(false);
-      updateStagingUI();
+        // =========================================================================
+        // FILTER / NLP ENGINE
+        // =========================================================================
 
-      if (replacedCount > 0) {
-        showToast(`Staged ${total} file(s) with ${replacedCount} updated duplicate(s)`, 'info');
-      } else {
-        showToast(`Successfully staged ${total} file(s)`, 'success');
-      }
+        function parseWarningCommand(inputText) {
+            const trimmed = inputText.trim().toLowerCase();
+            const parts = trimmed.split(/\s+/);
+            const warningEntries = Object.entries(WARNING_TYPES);
+            const verbs = ['remove', 'r'];
 
-      if (skippedCount > 0) {
-        setTimeout(() => showToast(`Skipped ${skippedCount} system/dependency files`, 'info'), 800);
-      }
-    }
-
-    function parseWarningCommand(inputText) {
-      const trimmed = inputText.trim().toLowerCase();
-      const parts = trimmed.split(/\s+/);
-      const warningEntries = Object.entries(WARNING_TYPES);
-      const verbs = ['remove', 'r'];
-
-      if (parts.length === 1) {
-        const matched = warningEntries.find(([name, config]) => config.aliases.includes(parts[0]));
-        if (matched) return { type: 'filter', warningKey: matched[1].key, warningLabel: matched[1].label };
-      }
-
-      if (parts.length >= 2) {
-        if (verbs.includes(parts[0])) {
-          const remainder = parts.slice(1).join(' ');
-          const matched = warningEntries.find(([name, config]) => config.aliases.includes(remainder));
-          if (matched) return { type: 'action', action: 'remove', warningKey: matched[1].key, warningLabel: matched[1].label };
-        }
-        if (verbs.includes(parts[parts.length - 1])) {
-          const remainder = parts.slice(0, -1).join(' ');
-          const matched = warningEntries.find(([name, config]) => config.aliases.includes(remainder));
-          if (matched) return { type: 'action', action: 'remove', warningKey: matched[1].key, warningLabel: matched[1].label };
-        }
-      }
-      return null;
-    }
-
-    function getActiveWarningFilter(inputText) {
-      const trimmed = inputText.trim().toLowerCase();
-      if (!trimmed) return null;
-      const parts = trimmed.split(/\s+/);
-      const verbs = ['remove', 'r'];
-
-      const exactCmd = parseWarningCommand(inputText);
-      if (exactCmd) return exactCmd.warningKey;
-
-      if (parts.length >= 2) {
-        if (verbs.includes(parts[0])) {
-          const remainder = parts.slice(1).join(' ');
-          const matched = Object.entries(WARNING_TYPES).find(([name, config]) => config.aliases.some(alias => alias.startsWith(remainder)));
-          if (matched) return matched[1].key;
-        }
-        if (verbs.includes(parts[parts.length - 1])) {
-          const remainder = parts.slice(0, -1).join(' ');
-          const matched = Object.entries(WARNING_TYPES).find(([name, config]) => config.aliases.some(alias => alias.startsWith(remainder)));
-          if (matched) return matched[1].key;
-        }
-      }
-
-      const matchedSingle = Object.entries(WARNING_TYPES).find(([name, config]) => config.aliases.some(alias => alias.startsWith(trimmed)));
-      if (matchedSingle) return matchedSingle[1].key;
-      return null;
-    }
-
-    // =========================================================================
-    // MODULAR NLP ADVANCED ENGINE (COMPROMISE LEMMATIZATION & RECURSIVE AST)
-    // =========================================================================
-
-    /**
-     * Step 1: Normalize NLP Queries, extracting quoted strings and evaluating Intent
-     * (decoupled from constraint matching to avoid false-positives).
-     * Added protection support for recursive parentheses nesting.
-     * Integrates defensive parenting/bracket checks to ensure clean, balanced structures.
-     */
-    function parseNLP(sentence) {
-      if (!sentence) return { intent: 'VIEW', ast: null };
-
-      // Quick defensive cleanup check for unbalanced parentheses
-      let openCount = (sentence.match(/\(/g) || []).length;
-      let closeCount = (sentence.match(/\)/g) || []).length;
-      let sanitizedSentence = sentence;
-
-      if (openCount > closeCount) {
-        sanitizedSentence += ')'.repeat(openCount - closeCount);
-      } else if (closeCount > openCount) {
-        let tempOpen = openCount;
-        sanitizedSentence = sanitizedSentence.replace(/\)/g, (match) => {
-          return tempOpen-- > 0 ? match : '';
-        });
-      }
-
-      // A. Extract and protect quoted text content strings to prevent cross-wiring
-      const quotes = [];
-      const quotePlaceholderText = sanitizedSentence.replace(/(["'])(.*?)\1/g, (match, q, content) => {
-        const placeholder = `__QUOTE_${quotes.length}__`;
-        quotes.push(content);
-        return placeholder;
-      });
-
-      // A2. Extract and protect parentheses recursively to prevent nested operator collision
-      const parenthesisGroups = [];
-      let protectedText = quotePlaceholderText;
-      while (/\(([^()]+)\)/.test(protectedText)) {
-        protectedText = protectedText.replace(/\(([^()]+)\)/, (match, groupContent) => {
-          const placeholder = `__GROUP_${parenthesisGroups.length}__`;
-          parenthesisGroups.push(groupContent);
-          return placeholder;
-        });
-      }
-
-      // B. Determine Semantic Intent using Compromise.js lemmatization of verbs
-      let verbsFound = [];
-      try {
-        const doc = nlp(protectedText);
-        verbsFound = doc.verbs().out('root');
-        if (!Array.isArray(verbsFound)) {
-          verbsFound = verbsFound ? [verbsFound] : [];
-        }
-      } catch (e) {
-        verbsFound = [];
-      }
-
-      // Semantic dictionaries for verb intent mapping
-      const keepRoots = ['keep', 'save', 'preserve', 'isolate', 'restrict', 'select', 'only', 'hold', 'filter'];
-      const removeRoots = ['remove', 'delete', 'trash', 'clear', 'exclude', 'discard', 'wipe', 'nuke', 'omit', 'kill', 'destroy', 'clean'];
-
-      let intent = 'VIEW'; // Default state is UI View Filter
-      let textLower = protectedText.toLowerCase();
-
-      // Fallback manual word check for verb intent in case verbs are missing context
-      let keepIndex = -1;
-      let removeIndex = -1;
-
-      keepRoots.forEach(root => {
-        const idx = textLower.indexOf(root);
-        if (idx !== -1 && (keepIndex === -1 || idx < keepIndex)) keepIndex = idx;
-      });
-
-      removeRoots.forEach(root => {
-        const idx = textLower.indexOf(root);
-        if (idx !== -1 && (removeIndex === -1 || idx < removeIndex)) removeIndex = idx;
-      });
-
-      // Assign dominant Intent based on first appearing action verb root
-      if (keepIndex !== -1 && (removeIndex === -1 || keepIndex < removeIndex)) {
-        intent = 'KEEP';
-      } else if (removeIndex !== -1 && (keepIndex === -1 || removeIndex < keepIndex)) {
-        intent = 'REMOVE';
-      }
-
-      // Strip out the initial action trigger text to cleanly isolate target constraints
-      const actionPhraseRegex = /^\s*(keep\s+only|keep|save|preserve|isolate|restrict|select|only|remove|delete|trash|clear|exclude|discard|wipe|nuke|omit|filter)\s*(all\s+the|the|files|documents|folders|and|or|a|an|project|any|some|code|source|staged|matching|every|all the|our)?\s*/i;
-      const constraintPayload = protectedText.replace(actionPhraseRegex, '');
-
-      // C. Build AST of constraints recursively from remaining payload
-      const ast = parseRecursiveAST(constraintPayload, quotes, parenthesisGroups);
-
-      return { intent, ast };
-    }
-
-    /**
-     * Step 2: Recursive Operator-Based splitting into AST Nodes
-     */
-    function parseRecursiveAST(text, quotes, parenthesisGroups = []) {
-      text = text.trim();
-      if (!text) return null;
-
-      // If the entire text is EXACTLY a single parenthesis group placeholder, unpack it immediately
-      const groupMatch = text.match(/^__GROUP_(\d+)__$/);
-      if (groupMatch) {
-        const idx = parseInt(groupMatch[1]);
-        return parseRecursiveAST(parenthesisGroups[idx], quotes, parenthesisGroups);
-      }
-
-      // Split by low-precedence OR
-      const orParts = splitByOperator(text, 'or');
-      if (orParts.length > 1) {
-        return {
-          type: 'OR',
-          children: orParts.map(part => parseRecursiveAST(part, quotes, parenthesisGroups)).filter(Boolean)
-        };
-      }
-
-      // Split by mid-precedence AND
-      const andParts = splitByOperator(text, 'and');
-      if (andParts.length > 1) {
-        return {
-          type: 'AND',
-          children: andParts.map(part => parseRecursiveAST(part, quotes, parenthesisGroups)).filter(Boolean)
-        };
-      }
-
-      // Split by high-precedence EXCEPT / NOT operators
-      const exceptParts = splitByOperator(text, 'except');
-      if (exceptParts.length > 1) {
-        let rootNode = parseRecursiveAST(exceptParts[0], quotes, parenthesisGroups);
-        for (let i = 1; i < exceptParts.length; i++) {
-          rootNode = {
-            type: 'AND',
-            left: rootNode,
-            right: {
-              type: 'NOT',
-              operand: parseRecursiveAST(exceptParts[i], quotes, parenthesisGroups)
+            if (parts.length === 1) {
+                const matched = warningEntries.find(([name, config]) => config.aliases.includes(parts[0]));
+                if (matched) return { type: 'filter', warningKey: matched[1].key, warningLabel: matched[1].label };
             }
-          };
-        }
-        return rootNode;
-      }
 
-      // Terminal leaf: Parse single clause criteria
-      return {
-        type: 'LEAF',
-        criteria: parseLeafCriteria(text, quotes, parenthesisGroups)
-      };
-    }
-
-    /**
-     * Split text by logical boundaries without disrupting nested subtexts.
-     * Incorporates whitespace-aware lookbehinds/lookaheads to prevent path slashes (/) from falsely matching operators.
-     */
-    function splitByOperator(text, opType) {
-      let regex;
-      if (opType === 'or') {
-        regex = /(?:(?<=\s|^)or(?=\s|$)|\|\|)/i;
-      } else if (opType === 'and') {
-        regex = /(?:(?<=\s|^)(?:and|with|also)(?=\s|$)|&&)/i;
-      } else if (opType === 'except') {
-        regex = /(?:(?<=\s|^)(?:except|excluding|not)(?=\s|$)|but\s+not)/i;
-      }
-
-      const segments = [];
-      let remainder = text;
-
-      while (true) {
-        const match = remainder.match(regex);
-        if (!match) {
-          segments.push(remainder);
-          break;
-        }
-        segments.push(remainder.slice(0, match.index));
-        remainder = remainder.slice(match.index + match[0].length);
-      }
-
-      return segments.map(seg => seg.trim()).filter(seg => seg.length > 0);
-    }
-
-    /**
-     * Step 3: Parse Leaf Constraints using Anchor-and-Capture Stream Scanning
-     */
-    function parseLeafCriteria(text, quotes, parenthesisGroups = []) {
-      const criteria = [];
-
-      // A. Extract and Capture recursively parsed parenthesis sub-tree branches
-      const groupRegex = /__GROUP_(\d+)__/g;
-      let gMatch;
-      while ((gMatch = groupRegex.exec(text)) !== null) {
-        const idx = parseInt(gMatch[1]);
-        const subTree = parseRecursiveAST(parenthesisGroups[idx], quotes, parenthesisGroups);
-        if (subTree) {
-          criteria.push({
-            type: 'group_tree',
-            ast: subTree
-          });
-        }
-      }
-
-      // B. Extract and Capture Sizes using Anchor-and-Capture
-      const sizeConstraints = extractAnchorSizes(text);
-      criteria.push(...sizeConstraints);
-
-      // C. Extract and Capture Paths using Anchor-and-Capture
-      const pathConstraints = extractAnchorPaths(text);
-      criteria.push(...pathConstraints);
-
-      // D. Extract and Capture Content Mentions (both string placeholders & anchors)
-      const contentConstraints = extractAnchorContents(text, quotes);
-      criteria.push(...contentConstraints);
-
-      // E. Extract and Capture States (empty, binary, etc.)
-      const stateConstraints = extractAnchorStates(text);
-      criteria.push(...stateConstraints);
-
-      // F. Extract Extensions (deduplicated against size/path/content/group texts)
-      let cleanedTextForExt = text;
-      sizeConstraints.forEach(sc => { if (sc.raw) cleanedTextForExt = cleanedTextForExt.replace(sc.raw, ''); });
-      pathConstraints.forEach(pc => { if (pc.value) cleanedTextForExt = cleanedTextForExt.replace(pc.value, ''); });
-      contentConstraints.forEach(cc => { if (cc.value) cleanedTextForExt = cleanedTextForExt.replace(cc.value, ''); });
-      cleanedTextForExt = cleanedTextForExt.replace(/__GROUP_\d+__/g, '');
-
-      const extensionConstraints = extractExtensions(cleanedTextForExt);
-      criteria.push(...extensionConstraints);
-
-      // G. Generic Fallback Text Match
-      if (criteria.length === 0 && text.trim().length > 0) {
-        const genericText = text.replace(/__QUOTE_\d+__/g, '').replace(/__GROUP_\d+__/g, '').trim();
-        if (genericText) {
-          criteria.push({
-            type: 'text',
-            value: genericText
-          });
-        }
-      }
-
-      return criteria;
-    }
-
-    /**
-     * Anchor-and-Capture: Evaluate size constraints natively using Compromise
-     */
-    function extractAnchorSizes(text) {
-      const constraints = [];
-      const tokens = text.toLowerCase().split(/\s+/);
-      const fillers = ['roughly', 'about', 'like', 'maybe', 'around', 'of', 'a', 'the', 'files', 'than', 'size', 'is', 'to'];
-
-      function parseMetricsFrom(index) {
-        let number = null;
-        let unit = null;
-        let idx = index;
-
-        while (idx < tokens.length) {
-          const tok = tokens[idx].replace(/[^\w.-]/g, '');
-          if (fillers.includes(tok)) {
-            idx++;
-            continue;
-          }
-
-          // A. Evaluate digits with units attached natively (e.g. 50kb)
-          const digitWithUnitMatch = tok.match(/^(\d+(?:\.\d+)?)(kb|mb|b|bytes|kilobytes|megabytes)$/);
-          if (digitWithUnitMatch) {
-            number = parseFloat(digitWithUnitMatch[1]);
-            unit = digitWithUnitMatch[2];
-            idx++;
-            break;
-          }
-
-          // B. Evaluate purely numeric digit tokens (e.g., "50") and actively peek ahead for separate units (e.g., "50 kb")
-          const pureDigitMatch = tok.match(/^(\d+(?:\.\d+)?)$/);
-          if (pureDigitMatch) {
-            number = parseFloat(pureDigitMatch[1]);
-            idx++;
-            // Active robust peek-ahead scanner consuming fillers
-            let peekIdx = idx;
-            while (peekIdx < tokens.length) {
-              const peekTok = tokens[peekIdx].replace(/[^\w.-]/g, '');
-              if (fillers.includes(peekTok)) {
-                peekIdx++;
-                continue;
-              }
-              if (['kb', 'mb', 'b', 'bytes', 'kilobytes', 'megabytes'].includes(peekTok)) {
-                unit = peekTok;
-                idx = peekIdx + 1; // Advance state beyond consumed unit token
-              }
-              break;
+            if (parts.length >= 2) {
+                if (verbs.includes(parts[0])) {
+                    const remainder = parts.slice(1).join(' ');
+                    const matched = warningEntries.find(([name, config]) => config.aliases.includes(remainder));
+                    if (matched) return { type: 'action', action: 'remove', warningKey: matched[1].key, warningLabel: matched[1].label };
+                }
+                if (verbs.includes(parts[parts.length - 1])) {
+                    const remainder = parts.slice(0, -1).join(' ');
+                    const matched = warningEntries.find(([name, config]) => config.aliases.includes(remainder));
+                    if (matched) return { type: 'action', action: 'remove', warningKey: matched[1].key, warningLabel: matched[1].label };
+                }
             }
-            break;
-          }
-
-          // Native NLP value extraction via Compromise (spelled-out word support, e.g., "fifty")
-          try {
-            const parsedNum = nlp(tok).values().toNumber().array()[0];
-            if (typeof parsedNum === 'number') {
-              number = parsedNum;
-              idx++;
-              break;
-            }
-          } catch (e) {
-            // Fallback
-          }
-
-          idx++;
+            return null;
         }
 
-        // Post-digit parsing backup scan for next trailing unit token
-        if (number !== null && !unit) {
-          while (idx < tokens.length) {
-            const tok = tokens[idx].replace(/[^\w.-]/g, '');
-            if (fillers.includes(tok)) {
-              idx++;
-              continue;
+        function getActiveWarningFilter(inputText) {
+            const trimmed = inputText.trim().toLowerCase();
+            if (!trimmed) return null;
+            const parts = trimmed.split(/\s+/);
+            const verbs = ['remove', 'r'];
+
+            const exactCmd = parseWarningCommand(inputText);
+            if (exactCmd) return exactCmd.warningKey;
+
+            if (parts.length >= 2) {
+                if (verbs.includes(parts[0])) {
+                    const remainder = parts.slice(1).join(' ');
+                    const matched = Object.entries(WARNING_TYPES).find(([name, config]) => config.aliases.some(alias => alias.startsWith(remainder)));
+                    if (matched) return matched[1].key;
+                }
+                if (verbs.includes(parts[parts.length - 1])) {
+                    const remainder = parts.slice(0, -1).join(' ');
+                    const matched = Object.entries(WARNING_TYPES).find(([name, config]) => config.aliases.some(alias => alias.startsWith(remainder)));
+                    if (matched) return matched[1].key;
+                }
             }
-            if (['kb', 'mb', 'b', 'bytes', 'kilobytes', 'megabytes'].includes(tok)) {
-              unit = tok;
-              idx++;
-            }
-            break;
-          }
+
+            const matchedSingle = Object.entries(WARNING_TYPES).find(([name, config]) => config.aliases.some(alias => alias.startsWith(trimmed)));
+            if (matchedSingle) return matchedSingle[1].key;
+            return null;
         }
 
-        if (number !== null) {
-          let bytes = number;
-          let unitStr = unit ? unit.toLowerCase() : 'kb'; // Default back to KB fallback
-          if (unitStr.startsWith('m')) bytes = number * 1024 * 1024;
-          else if (unitStr.startsWith('k')) bytes = number * 1024;
-          else if (unitStr.startsWith('b')) bytes = number;
+        function parseNLP(sentence) {
+            if (!sentence) return { intent: 'VIEW', ast: null };
 
-          return { bytes, nextIdx: idx, raw: `${number} ${unitStr}` };
-        }
+            let openCount = (sentence.match(/\(/g) || []).length;
+            let closeCount = (sentence.match(/\)/g) || []).length;
+            let sanitizedSentence = sentence;
 
-        return null;
-      }
-
-      // Token Scan matching Anchors
-      for (let i = 0; i < tokens.length; i++) {
-        const tok = tokens[i].replace(/[^\w.-]/g, '');
-
-        if (tok === 'between') {
-          const lowerBound = parseMetricsFrom(i + 1);
-          if (lowerBound) {
-            const upperBound = parseMetricsFrom(lowerBound.nextIdx);
-            if (upperBound) {
-              constraints.push({
-                type: 'size_range',
-                min: Math.min(lowerBound.bytes, upperBound.bytes),
-                max: Math.max(lowerBound.bytes, upperBound.bytes),
-                raw: `between ${lowerBound.raw} and ${upperBound.raw}`
-              });
-              i = upperBound.nextIdx - 1;
+            if (openCount > closeCount) {
+                sanitizedSentence += ')'.repeat(openCount - closeCount);
+            } else if (closeCount > openCount) {
+                let tempOpen = openCount;
+                sanitizedSentence = sanitizedSentence.replace(/\)/g, (match) => {
+                    return tempOpen-- > 0 ? match : '';
+                });
             }
-          }
-        } else if (['over', 'greater', 'larger', 'bigger', '>'].includes(tok)) {
-          const sizeLimit = parseMetricsFrom(i + 1);
-          if (sizeLimit) {
-            constraints.push({
-              type: 'size_op',
-              op: '>',
-              bytes: sizeLimit.bytes,
-              raw: `> ${sizeLimit.raw}`
+
+            const quotes = [];
+            const quotePlaceholderText = sanitizedSentence.replace(/(["'])(.*?)\1/g, (match, q, content) => {
+                const placeholder = `__QUOTE_${quotes.length}__`;
+                quotes.push(content);
+                return placeholder;
             });
-            i = sizeLimit.nextIdx - 1;
-          }
-        } else if (['under', 'less', 'smaller', '<'].includes(tok)) {
-          const sizeLimit = parseMetricsFrom(i + 1);
-          if (sizeLimit) {
-            constraints.push({
-              type: 'size_op',
-              op: '<',
-              bytes: sizeLimit.bytes,
-              raw: `< ${sizeLimit.raw}`
+
+            const parenthesisGroups = [];
+            let protectedText = quotePlaceholderText;
+            while (/\(([^()]+)\)/.test(protectedText)) {
+                protectedText = protectedText.replace(/\(([^()]+)\)/, (match, groupContent) => {
+                    const placeholder = `__GROUP_${parenthesisGroups.length}__`;
+                    parenthesisGroups.push(groupContent);
+                    return placeholder;
+                });
+            }
+
+            let verbsFound = [];
+            try {
+                const doc = nlp(protectedText);
+                verbsFound = doc.verbs().out('root');
+                if (!Array.isArray(verbsFound)) {
+                    verbsFound = verbsFound ? [verbsFound] : [];
+                }
+            } catch (e) {
+                verbsFound = [];
+            }
+
+            const keepRoots = ['keep', 'save', 'preserve', 'isolate', 'restrict', 'select', 'only', 'hold', 'filter'];
+            const removeRoots = ['remove', 'delete', 'trash', 'clear', 'exclude', 'discard', 'wipe', 'nuke', 'omit', 'kill', 'destroy', 'clean'];
+
+            let intent = 'VIEW';
+            let textLower = protectedText.toLowerCase();
+
+            let keepIndex = -1;
+            let removeIndex = -1;
+
+            keepRoots.forEach(root => {
+                const idx = textLower.indexOf(root);
+                if (idx !== -1 && (keepIndex === -1 || idx < keepIndex)) keepIndex = idx;
             });
-            i = sizeLimit.nextIdx - 1;
-          }
-        }
-      }
 
-      return constraints;
-    }
+            removeRoots.forEach(root => {
+                const idx = textLower.indexOf(root);
+                if (idx !== -1 && (removeIndex === -1 || idx < removeIndex)) removeIndex = idx;
+            });
 
-    /**
-     * Anchor-and-Capture: Extract Path targets
-     */
-    function extractAnchorPaths(text) {
-      const paths = [];
-      const tokens = text.toLowerCase().split(/\s+/);
-      const anchors = ['inside', 'in', 'under', 'folder', 'directory', 'within'];
-      const fillers = ['the', 'folder', 'directory', 'path', 'named', 'called', 'a', 'an'];
-
-      for (let i = 0; i < tokens.length; i++) {
-        const tok = tokens[i].replace(/[^\w.-]/g, '');
-        if (anchors.includes(tok)) {
-          let pathVal = '';
-          let j = i + 1;
-          while (j < tokens.length) {
-            const nextTok = tokens[j].replace(/[^\w.\-\/]/g, ''); // Accept subfolder slashes
-            if (fillers.includes(nextTok)) {
-              j++;
-              continue;
+            if (keepIndex !== -1 && (removeIndex === -1 || keepIndex < removeIndex)) {
+                intent = 'KEEP';
+            } else if (removeIndex !== -1 && (keepIndex === -1 || removeIndex < keepIndex)) {
+                intent = 'REMOVE';
             }
-            if (nextTok && !anchors.includes(nextTok)) {
-              pathVal = nextTok;
-              i = j;
+
+            const actionPhraseRegex = /^\s*(keep\s+only|keep|save|preserve|isolate|restrict|select|only|remove|delete|trash|clear|exclude|discard|wipe|nuke|omit|filter)\s*(all\s+the|the|files|documents|folders|and|or|a|an|project|any|some|code|source|staged|matching|every|all the|our)?\s*/i;
+            const constraintPayload = protectedText.replace(actionPhraseRegex, '');
+
+            const ast = parseRecursiveAST(constraintPayload, quotes, parenthesisGroups);
+
+            return { intent, ast };
+        }
+
+        function parseRecursiveAST(text, quotes, parenthesisGroups = []) {
+            text = text.trim();
+            if (!text) return null;
+
+            const groupMatch = text.match(/^__GROUP_(\d+)__$/);
+            if (groupMatch) {
+                const idx = parseInt(groupMatch[1]);
+                return parseRecursiveAST(parenthesisGroups[idx], quotes, parenthesisGroups);
             }
-            break;
-          }
-          if (pathVal) {
-            paths.push({ type: 'path', value: pathVal });
-          }
-        }
-      }
-      return paths;
-    }
 
-    /**
-     * Anchor-and-Capture: Extract Content keywords securely
-     */
-    function extractAnchorContents(text, quotes) {
-      const contents = [];
-
-      // A. Pull matching extracted quotes placeholders
-      const quoteRegex = /__QUOTE_(\d+)__/g;
-      let match;
-      while ((match = quoteRegex.exec(text)) !== null) {
-        const idx = parseInt(match[1]);
-        if (idx >= 0 && idx < quotes.length) {
-          contents.push({ type: 'content', value: quotes[idx] });
-        }
-      }
-
-      // B. Retrieve word-based contents if raw keywords are specified
-      const tokens = text.toLowerCase().split(/\s+/);
-      const anchors = ['mentioning', 'containing', 'includes', 'contains', 'matching'];
-      const fillers = ['the', 'word', 'text', 'string', 'phrase', 'with', 'containing'];
-
-      for (let i = 0; i < tokens.length; i++) {
-        const tok = tokens[i].replace(/[^\w.-]/g, '');
-        if (anchors.includes(tok)) {
-          let value = '';
-          let j = i + 1;
-          while (j < tokens.length) {
-            const rawTok = tokens[j].replace(/['"“”‘’]/g, '');
-            const cleanTok = rawTok.replace(/[^\w.-]/g, '');
-            if (fillers.includes(cleanTok)) {
-              j++;
-              continue;
+            const orParts = splitByOperator(text, 'or');
+            if (orParts.length > 1) {
+                return {
+                    type: 'OR',
+                    children: orParts.map(part => parseRecursiveAST(part, quotes, parenthesisGroups)).filter(Boolean)
+                };
             }
-            if (rawTok && !rawTok.startsWith('__quote_')) {
-              value = rawTok;
-              i = j;
+
+            const andParts = splitByOperator(text, 'and');
+            if (andParts.length > 1) {
+                return {
+                    type: 'AND',
+                    children: andParts.map(part => parseRecursiveAST(part, quotes, parenthesisGroups)).filter(Boolean)
+                };
             }
-            break;
-          }
-          if (value) {
-            contents.push({ type: 'content', value });
-          }
+
+            const exceptParts = splitByOperator(text, 'except');
+            if (exceptParts.length > 1) {
+                let rootNode = parseRecursiveAST(exceptParts[0], quotes, parenthesisGroups);
+                for (let i = 1; i < exceptParts.length; i++) {
+                    rootNode = {
+                        type: 'AND',
+                        left: rootNode,
+                        right: {
+                            type: 'NOT',
+                            operand: parseRecursiveAST(exceptParts[i], quotes, parenthesisGroups)
+                        }
+                    };
+                }
+                return rootNode;
+            }
+
+            return {
+                type: 'LEAF',
+                criteria: parseLeafCriteria(text, quotes, parenthesisGroups)
+            };
         }
-      }
 
-      return contents;
-    }
+        function splitByOperator(text, opType) {
+            let regex;
+            if (opType === 'or') {
+                regex = /(?:(?<=\s|^)or(?=\s|$)|\|\|)/i;
+            } else if (opType === 'and') {
+                regex = /(?:(?<=\s|^)(?:and|with|also)(?=\s|$)|&&)/i;
+            } else if (opType === 'except') {
+                regex = /(?:(?<=\s|^)(?:except|excluding|not)(?=\s|$)|but\s+not)/i;
+            }
 
-    /**
-     * State mapping
-     */
-    function extractAnchorStates(text) {
-      const states = [];
-      const textLower = text.toLowerCase();
+            const segments = [];
+            let remainder = text;
 
-      if (/\b(not\s+empty|non-empty|has\s+content)\b/i.test(textLower)) {
-        states.push({ type: 'state', flag: 'notEmpty', label: 'Non-Empty' });
-      } else if (/\b(empty|blank)\b/i.test(textLower)) {
-        states.push({ type: 'state', flag: 'empty', label: 'Empty' });
-      }
+            while (true) {
+                const match = remainder.match(regex);
+                if (!match) {
+                    segments.push(remainder);
+                    break;
+                }
+                segments.push(remainder.slice(0, match.index));
+                remainder = remainder.slice(match.index + match[0].length);
+            }
 
-      if (/\b(not\s+binary|non-binary|text\s+only|plain\s+text)\b/i.test(textLower)) {
-        states.push({ type: 'state', flag: 'notBinary', label: 'Plain Text' });
-      } else if (/\b(binary)\b/i.test(textLower)) {
-        states.push({ type: 'state', flag: 'binary', label: 'Binary' });
-      }
-
-      return states;
-    }
-
-    /**
-     * Extract Extensions from normalized tokens
-     */
-    function extractExtensions(text) {
-      const extensions = [];
-      const tokens = text.toLowerCase().split(/\s+/);
-
-      tokens.forEach(tok => {
-        let clean = tok.replace(/(?!^\.)[^\w.-]/g, '');
-        if (clean.startsWith('.')) {
-          extensions.push({ type: 'extension', value: clean });
-        } else if (recognizedExtensions.includes(clean)) {
-          extensions.push({ type: 'extension', value: '.' + clean });
+            return segments.map(seg => seg.trim()).filter(seg => seg.length > 0);
         }
-      });
 
-      return extensions;
-    }
+        function parseLeafCriteria(text, quotes, parenthesisGroups = []) {
+            const criteria = [];
 
-    /**
-     * Recursive Evaluator of Compiled AST on File Objects
-     */
-    function evaluateAST(file, node) {
-      if (!node) return true;
+            const groupRegex = /__GROUP_(\d+)__/g;
+            let gMatch;
+            while ((gMatch = groupRegex.exec(text)) !== null) {
+                const idx = parseInt(gMatch[1]);
+                const subTree = parseRecursiveAST(parenthesisGroups[idx], quotes, parenthesisGroups);
+                if (subTree) {
+                    criteria.push({
+                        type: 'group_tree',
+                        ast: subTree
+                    });
+                }
+            }
 
-      if (node.type === 'LEAF') {
-        if (!node.criteria || node.criteria.length === 0) return true;
-        return node.criteria.every(crit => evalCriterion(file, crit));
-      }
+            const sizeConstraints = extractAnchorSizes(text);
+            criteria.push(...sizeConstraints);
 
-      if (node.type === 'AND') {
-        if (node.children) {
-          return node.children.every(child => evaluateAST(file, child));
+            const pathConstraints = extractAnchorPaths(text);
+            criteria.push(...pathConstraints);
+
+            const contentConstraints = extractAnchorContents(text, quotes);
+            criteria.push(...contentConstraints);
+
+            const stateConstraints = extractAnchorStates(text);
+            criteria.push(...stateConstraints);
+
+            let cleanedTextForExt = text;
+            sizeConstraints.forEach(sc => { if (sc.raw) cleanedTextForExt = cleanedTextForExt.replace(sc.raw, ''); });
+            pathConstraints.forEach(pc => { if (pc.value) cleanedTextForExt = cleanedTextForExt.replace(pc.value, ''); });
+            contentConstraints.forEach(cc => { if (cc.value) cleanedTextForExt = cleanedTextForExt.replace(cc.value, ''); });
+            cleanedTextForExt = cleanedTextForExt.replace(/__GROUP_\d+__/g, '');
+
+            const extensionConstraints = extractExtensions(cleanedTextForExt);
+            criteria.push(...extensionConstraints);
+
+            if (criteria.length === 0 && text.trim().length > 0) {
+                const genericText = text.replace(/__QUOTE_\d+__/g, '').replace(/__GROUP_\d+__/g, '').trim();
+                if (genericText) {
+                    criteria.push({
+                        type: 'text',
+                        value: genericText
+                    });
+                }
+            }
+
+            return criteria;
         }
-        return evaluateAST(file, node.left) && evaluateAST(file, node.right);
-      }
 
-      if (node.type === 'OR') {
-        if (node.children) {
-          return node.children.some(child => evaluateAST(file, child));
+        function extractAnchorSizes(text) {
+            const constraints = [];
+            const tokens = text.toLowerCase().split(/\s+/);
+            const fillers = ['roughly', 'about', 'like', 'maybe', 'around', 'of', 'a', 'the', 'files', 'than', 'size', 'is', 'to'];
+
+            function parseMetricsFrom(index) {
+                let number = null;
+                let unit = null;
+                let idx = index;
+
+                while (idx < tokens.length) {
+                    const tok = tokens[idx].replace(/[^\w.-]/g, '');
+                    if (fillers.includes(tok)) {
+                        idx++;
+                        continue;
+                    }
+
+                    const digitWithUnitMatch = tok.match(/^(\d+(?:\.\d+)?)(kb|mb|b|bytes|kilobytes|megabytes)$/);
+                    if (digitWithUnitMatch) {
+                        number = parseFloat(digitWithUnitMatch[1]);
+                        unit = digitWithUnitMatch[2];
+                        idx++;
+                        break;
+                    }
+
+                    const pureDigitMatch = tok.match(/^(\d+(?:\.\d+)?)$/);
+                    if (pureDigitMatch) {
+                        number = parseFloat(pureDigitMatch[1]);
+                        idx++;
+                        let peekIdx = idx;
+                        while (peekIdx < tokens.length) {
+                            const peekTok = tokens[peekIdx].replace(/[^\w.-]/g, '');
+                            if (fillers.includes(peekTok)) {
+                                peekIdx++;
+                                continue;
+                            }
+                            if (['kb', 'mb', 'b', 'bytes', 'kilobytes', 'megabytes'].includes(peekTok)) {
+                                unit = peekTok;
+                                idx = peekIdx + 1;
+                            }
+                            break;
+                        }
+                        break;
+                    }
+
+                    try {
+                        const parsedNum = nlp(tok).values().toNumber().array()[0];
+                        if (typeof parsedNum === 'number') {
+                            number = parsedNum;
+                            idx++;
+                            break;
+                        }
+                    } catch (e) {}
+
+                    idx++;
+                }
+
+                if (number !== null && !unit) {
+                    while (idx < tokens.length) {
+                        const tok = tokens[idx].replace(/[^\w.-]/g, '');
+                        if (fillers.includes(tok)) {
+                            idx++;
+                            continue;
+                        }
+                        if (['kb', 'mb', 'b', 'bytes', 'kilobytes', 'megabytes'].includes(tok)) {
+                            unit = tok;
+                            idx++;
+                        }
+                        break;
+                    }
+                }
+
+                if (number !== null) {
+                    let bytes = number;
+                    let unitStr = unit ? unit.toLowerCase() : 'kb';
+                    if (unitStr.startsWith('m')) bytes = number * 1024 * 1024;
+                    else if (unitStr.startsWith('k')) bytes = number * 1024;
+                    else if (unitStr.startsWith('b')) bytes = number;
+
+                    return { bytes, nextIdx: idx, raw: `${number} ${unitStr}` };
+                }
+
+                return null;
+            }
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tok = tokens[i].replace(/[^\w.-]/g, '');
+
+                if (tok === 'between') {
+                    const lowerBound = parseMetricsFrom(i + 1);
+                    if (lowerBound) {
+                        const upperBound = parseMetricsFrom(lowerBound.nextIdx);
+                        if (upperBound) {
+                            constraints.push({
+                                type: 'size_range',
+                                min: Math.min(lowerBound.bytes, upperBound.bytes),
+                                max: Math.max(lowerBound.bytes, upperBound.bytes),
+                                raw: `between ${lowerBound.raw} and ${upperBound.raw}`
+                            });
+                            i = upperBound.nextIdx - 1;
+                        }
+                    }
+                } else if (['over', 'greater', 'larger', 'bigger', '>'].includes(tok)) {
+                    const sizeLimit = parseMetricsFrom(i + 1);
+                    if (sizeLimit) {
+                        constraints.push({
+                            type: 'size_op',
+                            op: '>',
+                            bytes: sizeLimit.bytes,
+                            raw: `> ${sizeLimit.raw}`
+                        });
+                        i = sizeLimit.nextIdx - 1;
+                    }
+                } else if (['under', 'less', 'smaller', '<'].includes(tok)) {
+                    const sizeLimit = parseMetricsFrom(i + 1);
+                    if (sizeLimit) {
+                        constraints.push({
+                            type: 'size_op',
+                            op: '<',
+                            bytes: sizeLimit.bytes,
+                            raw: `< ${sizeLimit.raw}`
+                        });
+                        i = sizeLimit.nextIdx - 1;
+                    }
+                }
+            }
+
+            return constraints;
         }
-        return evaluateAST(file, node.left) || evaluateAST(file, node.right);
-      }
 
-      if (node.type === 'NOT') {
-        return !evaluateAST(file, node.operand);
-      }
+        function extractAnchorPaths(text) {
+            const paths = [];
+            const tokens = text.toLowerCase().split(/\s+/);
+            const anchors = ['inside', 'in', 'under', 'folder', 'directory', 'within'];
+            const fillers = ['the', 'folder', 'directory', 'path', 'named', 'called', 'a', 'an'];
 
-      return true;
-    }
+            for (let i = 0; i < tokens.length; i++) {
+                const tok = tokens[i].replace(/[^\w.-]/g, '');
+                if (anchors.includes(tok)) {
+                    let pathVal = '';
+                    let j = i + 1;
+                    while (j < tokens.length) {
+                        const nextTok = tokens[j].replace(/[^\w.\-\/]/g, '');
+                        if (fillers.includes(nextTok)) {
+                            j++;
+                            continue;
+                        }
+                        if (nextTok && !anchors.includes(nextTok)) {
+                            pathVal = nextTok;
+                            i = j;
+                        }
+                        break;
+                    }
+                    if (pathVal) {
+                        paths.push({ type: 'path', value: pathVal });
+                    }
+                }
+            }
+            return paths;
+        }
 
-    /**
-     * Sub-node Match Criteria Gate
-     */
-    function evalCriterion(file, crit) {
-      if (crit.type === 'group_tree') {
-        return evaluateAST(file, crit.ast);
-      }
-      if (crit.type === 'extension') {
-        return file.name.toLowerCase().endsWith(crit.value.toLowerCase());
-      }
-      if (crit.type === 'path') {
-        return file.name.toLowerCase().includes(crit.value.toLowerCase());
-      }
-      if (crit.type === 'content') {
-        return file.content.toLowerCase().includes(crit.value.toLowerCase());
-      }
-      if (crit.type === 'size_op') {
-        if (crit.op === '>') return file.sizeBytes > crit.bytes;
-        if (crit.op === '<') return file.sizeBytes < crit.bytes;
-      }
-      if (crit.type === 'size_range') {
-        return file.sizeBytes >= crit.min && file.sizeBytes <= crit.max;
-      }
-      if (crit.type === 'state') {
-        if (crit.flag === 'empty') return file.content.trim().length === 0;
-        if (crit.flag === 'notEmpty') return file.content.trim().length > 0;
-        if (crit.flag === 'binary' || crit.flag === 'isBinary') return file.isBinary === true;
-        if (crit.flag === 'notBinary') return file.isBinary === false;
-        if (crit.flag === 'large' || crit.flag === 'isLarge') return file.isLarge === true;
-      }
-      if (crit.type === 'text') {
-        return file.name.toLowerCase().includes(crit.value.toLowerCase());
-      }
-      return true;
-    }
+        function extractAnchorContents(text, quotes) {
+            const contents = [];
 
-    // =========================================================================
-    // VISUAL INTENT MIRRORING UI ENGINE
-    // =========================================================================
+            const quoteRegex = /__QUOTE_(\d+)__/g;
+            let match;
+            while ((match = quoteRegex.exec(text)) !== null) {
+                const idx = parseInt(match[1]);
+                if (idx >= 0 && idx < quotes.length) {
+                    contents.push({ type: 'content', value: quotes[idx] });
+                }
+            }
 
-    function updateIntentMirroringUI(parsedResult) {
-      const container = document.getElementById('intent-mirroring-container');
-      if (!parsedResult || !parsedResult.ast) {
-        container.classList.add('hidden');
-        container.innerHTML = '';
-        return;
-      }
+            const tokens = text.toLowerCase().split(/\s+/);
+            const anchors = ['mentioning', 'containing', 'includes', 'contains', 'matching'];
+            const fillers = ['the', 'word', 'text', 'string', 'phrase', 'with', 'containing'];
 
-      container.classList.remove('hidden');
-      const { intent, ast } = parsedResult;
+            for (let i = 0; i < tokens.length; i++) {
+                const tok = tokens[i].replace(/[^\w.-]/g, '');
+                if (anchors.includes(tok)) {
+                    let value = '';
+                    let j = i + 1;
+                    while (j < tokens.length) {
+                        const rawTok = tokens[j].replace(/['"“”‘’]/g, '');
+                        const cleanTok = rawTok.replace(/[^\w.-]/g, '');
+                        if (fillers.includes(cleanTok)) {
+                            j++;
+                            continue;
+                        }
+                        if (rawTok && !rawTok.startsWith('__quote_')) {
+                            value = rawTok;
+                            i = j;
+                        }
+                        break;
+                    }
+                    if (value) {
+                        contents.push({ type: 'content', value });
+                    }
+                }
+            }
 
-      let intentBadgeBg = 'bg-blue-50 text-blue-700 border-blue-200';
-      let intentLabel = 'Action: Filter View';
-      if (intent === 'KEEP') {
-        intentBadgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        intentLabel = 'Action: Keep (Isolate)';
-      } else if (intent === 'REMOVE') {
-        intentBadgeBg = 'bg-rose-50 text-rose-700 border-rose-200';
-        intentLabel = 'Action: Remove (Delete)';
-      }
+            return contents;
+        }
 
-      const rulesHTML = renderASTPreviewHTML(ast);
+        function extractAnchorStates(text) {
+            const states = [];
+            const textLower = text.toLowerCase();
 
-      container.innerHTML = `
+            if (/\b(not\s+empty|non-empty|has\s+content)\b/i.test(textLower)) {
+                states.push({ type: 'state', flag: 'notEmpty', label: 'Non-Empty' });
+            } else if (/\b(empty|blank)\b/i.test(textLower)) {
+                states.push({ type: 'state', flag: 'empty', label: 'Empty' });
+            }
+
+            if (/\b(not\s+binary|non-binary|text\s+only|plain\s+text)\b/i.test(textLower)) {
+                states.push({ type: 'state', flag: 'notBinary', label: 'Plain Text' });
+            } else if (/\b(binary)\b/i.test(textLower)) {
+                states.push({ type: 'state', flag: 'binary', label: 'Binary' });
+            }
+
+            return states;
+        }
+
+        function extractExtensions(text) {
+            const extensions = [];
+            const tokens = text.toLowerCase().split(/\s+/);
+
+            tokens.forEach(tok => {
+                let clean = tok.replace(/(?!^\.)[^\w.-]/g, '');
+                if (clean.startsWith('.')) {
+                    extensions.push({ type: 'extension', value: clean });
+                } else if (recognizedExtensions.includes(clean)) {
+                    extensions.push({ type: 'extension', value: '.' + clean });
+                }
+            });
+
+            return extensions;
+        }
+
+        function evaluateAST(file, node) {
+            if (!node) return true;
+
+            if (node.type === 'LEAF') {
+                if (!node.criteria || node.criteria.length === 0) return true;
+                return node.criteria.every(crit => evalCriterion(file, crit));
+            }
+
+            if (node.type === 'AND') {
+                if (node.children) {
+                    return node.children.every(child => evaluateAST(file, child));
+                }
+                return evaluateAST(file, node.left) && evaluateAST(file, node.right);
+            }
+
+            if (node.type === 'OR') {
+                if (node.children) {
+                    return node.children.some(child => evaluateAST(file, child));
+                }
+                return evaluateAST(file, node.left) || evaluateAST(file, node.right);
+            }
+
+            if (node.type === 'NOT') {
+                return !evaluateAST(file, node.operand);
+            }
+
+            return true;
+        }
+
+        function evalCriterion(file, crit) {
+            if (crit.type === 'group_tree') {
+                return evaluateAST(file, crit.ast);
+            }
+            if (crit.type === 'extension') {
+                return file.name.toLowerCase().endsWith(crit.value.toLowerCase());
+            }
+            if (crit.type === 'path') {
+                return file.name.toLowerCase().includes(crit.value.toLowerCase());
+            }
+            if (crit.type === 'content') {
+                return file.content.toLowerCase().includes(crit.value.toLowerCase());
+            }
+            if (crit.type === 'size_op') {
+                if (crit.op === '>') return file.sizeBytes > crit.bytes;
+                if (crit.op === '<') return file.sizeBytes < crit.bytes;
+            }
+            if (crit.type === 'size_range') {
+                return file.sizeBytes >= crit.min && file.sizeBytes <= crit.max;
+            }
+            if (crit.type === 'state') {
+                if (crit.flag === 'empty') return file.content.trim().length === 0;
+                if (crit.flag === 'notEmpty') return file.content.trim().length > 0;
+                if (crit.flag === 'binary' || crit.flag === 'isBinary') return file.isBinary === true;
+                if (crit.flag === 'notBinary') return file.isBinary === false;
+                if (crit.flag === 'large' || crit.flag === 'isLarge') return file.isLarge === true;
+            }
+            if (crit.type === 'text') {
+                return file.name.toLowerCase().includes(crit.value.toLowerCase());
+            }
+            return true;
+        }
+
+        function updateIntentMirroringUI(parsedResult) {
+            const container = document.getElementById('intent-mirroring-container');
+            if (!parsedResult || !parsedResult.ast) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            container.classList.remove('hidden');
+            const { intent, ast } = parsedResult;
+
+            let intentBadgeBg = 'bg-blue-50 text-blue-700 border-blue-200';
+            let intentLabel = 'Action: Filter View';
+            if (intent === 'KEEP') {
+                intentBadgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                intentLabel = 'Action: Keep (Isolate)';
+            } else if (intent === 'REMOVE') {
+                intentBadgeBg = 'bg-rose-50 text-rose-700 border-rose-200';
+                intentLabel = 'Action: Remove (Delete)';
+            }
+
+            const rulesHTML = renderASTPreviewHTML(ast);
+
+            container.innerHTML = `
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 shadow-inner text-xs space-y-2">
           <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-200/60">
             <span class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Natural Language Preview</span>
@@ -1079,25 +1132,25 @@
           </div>
         </div>
       `;
-    }
-
-    function renderASTPreviewHTML(node) {
-      if (!node) return '<span class="text-slate-400 italic">No constraints parsed</span>';
-
-      if (node.type === 'LEAF') {
-        if (!node.criteria || node.criteria.length === 0) {
-          return '<span class="text-slate-400 italic">Match all files</span>';
         }
-        return `
+
+        function renderASTPreviewHTML(node) {
+            if (!node) return '<span class="text-slate-400 italic">No constraints parsed</span>';
+
+            if (node.type === 'LEAF') {
+                if (!node.criteria || node.criteria.length === 0) {
+                    return '<span class="text-slate-400 italic">Match all files</span>';
+                }
+                return `
           <div class="flex flex-wrap gap-1.5 items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm w-full">
             ${node.criteria.map(crit => renderCriterionBadgeHTML(crit)).join('')}
           </div>
         `;
-      }
+            }
 
-      if (node.type === 'AND') {
-        if (node.children) {
-          return `
+            if (node.type === 'AND') {
+                if (node.children) {
+                    return `
             <div class="space-y-1">
               ${node.children.map(child => renderASTPreviewHTML(child)).join(`
                 <div class="flex items-center justify-center my-1">
@@ -1106,8 +1159,8 @@
               `)}
             </div>
           `;
-        }
-        return `
+                }
+                return `
           <div class="space-y-1">
             ${renderASTPreviewHTML(node.left)}
             <div class="flex items-center justify-center my-1">
@@ -1116,11 +1169,11 @@
             ${renderASTPreviewHTML(node.right)}
           </div>
         `;
-      }
+            }
 
-      if (node.type === 'OR') {
-        if (node.children) {
-          return `
+            if (node.type === 'OR') {
+                if (node.children) {
+                    return `
             <div class="space-y-1">
               ${node.children.map(child => renderASTPreviewHTML(child)).join(`
                 <div class="flex items-center justify-center my-1">
@@ -1129,8 +1182,8 @@
               `)}
             </div>
           `;
-        }
-        return `
+                }
+                return `
           <div class="space-y-1">
             ${renderASTPreviewHTML(node.left)}
             <div class="flex items-center justify-center my-1">
@@ -1139,311 +1192,300 @@
             ${renderASTPreviewHTML(node.right)}
           </div>
         `;
-      }
+            }
 
-      if (node.type === 'NOT') {
-        return `
+            if (node.type === 'NOT') {
+                return `
           <div class="border border-rose-100 rounded-lg p-2 bg-rose-50/20 w-full">
             <div class="text-[9px] font-bold text-rose-600 uppercase tracking-wider mb-1 px-1">EXCEPT (NOT)</div>
             ${renderASTPreviewHTML(node.operand)}
           </div>
         `;
-      }
+            }
 
-      return '';
-    }
+            return '';
+        }
 
-    function renderCriterionBadgeHTML(crit) {
-      if (crit.type === 'group_tree') {
-        return `
+        function renderCriterionBadgeHTML(crit) {
+            if (crit.type === 'group_tree') {
+                return `
           <div class="border border-slate-200 rounded-lg p-2 bg-slate-50/50 my-1 w-full text-slate-700">
             <span class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mr-1.5">group:</span>
             ${renderASTPreviewHTML(crit.ast)}
           </div>
         `;
-      }
-      if (crit.type === 'extension') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 font-semibold text-[10px]" title="File extension must match"><span class="text-[9px] uppercase tracking-wider font-extrabold text-violet-400 mr-1.5">ext:</span>${crit.value}</span>`;
-      }
-      if (crit.type === 'path') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-[10px]" title="File path must contain"><span class="text-[9px] uppercase tracking-wider font-extrabold text-indigo-400 mr-1.5">path:</span>${crit.value}</span>`;
-      }
-      if (crit.type === 'content') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-[10px]" title="Content must contain phrase"><span class="text-[9px] uppercase tracking-wider font-extrabold text-amber-500 mr-1.5">text:</span>"${crit.value}"</span>`;
-      }
-      if (crit.type === 'size_op') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 font-semibold text-[10px]" title="Size constraint"><span class="text-[9px] uppercase tracking-wider font-extrabold text-teal-400 mr-1.5">size:</span>${crit.op} ${(crit.bytes / 1024).toFixed(1)} KB</span>`;
-      }
-      if (crit.type === 'size_range') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 font-semibold text-[10px]" title="Size range"><span class="text-[9px] uppercase tracking-wider font-extrabold text-teal-400 mr-1.5">size:</span>${(crit.min / 1024).toFixed(1)}K - ${(crit.max / 1024).toFixed(1)}K</span>`;
-      }
-      if (crit.type === 'state') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[10px]" title="File state check"><span class="text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 mr-1.5">state:</span>${crit.label}</span>`;
-      }
-      if (crit.type === 'text') {
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px]" title="Generic name match"><span class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mr-1.5">name:</span>contains: ${crit.value}</span>`;
-      }
-      return '';
-    }
-
-    // ==========================================
-    // PHASE 1: LIVE FILTERING LISTENER
-    // ==========================================
-    searchInput.addEventListener('input', (e) => {
-      const rawValue = e.target.value;
-      const trimmed = rawValue.trim();
-      const trimmedLower = trimmed.toLowerCase();
-
-      // "ask:" Advanced NLP Interception Gateway
-      if (trimmedLower.startsWith('ask:')) {
-        const nlpSentence = trimmed.slice(4).trim();
-        const parsedResult = parseNLP(nlpSentence);
-        activeAST = parsedResult.ast;
-        activeIntent = parsedResult.intent;
-        updateIntentMirroringUI(parsedResult);
-      }
-      // Standard Query Unified AST Gateway
-      else {
-        document.getElementById('intent-mirroring-container').classList.add('hidden');
-        activeIntent = 'VIEW';
-
-        if (trimmed === '') {
-          activeAST = null;
-        } else if (trimmed.startsWith('-') || trimmed.startsWith('!')) {
-          const negativeTerm = trimmed.slice(1).toLowerCase().trim();
-          activeAST = {
-            type: 'NOT',
-            operand: {
-              type: 'LEAF',
-              criteria: [{ type: 'text', value: negativeTerm }]
             }
-          };
-        } else {
-          const sizeMatch = trimmedLower.match(/^([<>])\s*(\d+(?:\.\d+)?)\s*(kb|mb|b)?$/i);
-          if (sizeMatch) {
-            const op = sizeMatch[1];
-            const val = parseFloat(sizeMatch[2]);
-            const unit = (sizeMatch[3] || 'kb').toLowerCase();
-            let targetBytes = val;
-            if (unit === 'kb') targetBytes = val * 1024;
-            else if (unit === 'mb') targetBytes = val * 1024 * 1024;
-
-            activeAST = {
-              type: 'LEAF',
-              criteria: [{ type: 'size_op', op: op, bytes: targetBytes, raw: `${op}${val}${unit}` }]
-            };
-          } else {
-            const warningFilterKey = getActiveWarningFilter(rawValue);
-            if (warningFilterKey) {
-              activeAST = {
-                type: 'LEAF',
-                criteria: [{
-                  type: 'state',
-                  flag: warningFilterKey,
-                  label: WARNING_TYPES[warningFilterKey === 'isLarge' ? 'large' : 'binary'].label
-                }]
-              };
-            } else {
-              activeAST = {
-                type: 'LEAF',
-                criteria: [{ type: 'text', value: trimmedLower }]
-              };
+            if (crit.type === 'extension') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 font-semibold text-[10px]" title="File extension must match"><span class="text-[9px] uppercase tracking-wider font-extrabold text-violet-400 mr-1.5">ext:</span>${crit.value}</span>`;
             }
-          }
-        }
-      }
-
-      updateStagingUI(false);
-    });
-
-    // ==========================================
-    // PHASE 2: MUTATION EXECUTION LISTENER
-    // ==========================================
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const val = searchInput.value.trim();
-        const valLower = val.toLowerCase();
-
-        // NLP Execution Gate
-        if (valLower.startsWith('ask:')) {
-          if (!activeAST) {
-            showToast("Could not identify any valid file conditions to target. Please be more specific.", "error");
-            return;
-          }
-
-          if (activeIntent === 'VIEW') {
-            showToast("In View/Filtering mode. Type 'keep' or 'remove' inside prompt to run batch operations.", "info");
-            return;
-          }
-
-          const initialCount = stagedFiles.length;
-
-          if (activeIntent === 'KEEP') {
-            stagedFiles = stagedFiles.filter(file => evaluateAST(file, activeAST));
-            const removedCount = initialCount - stagedFiles.length;
-            showToast("Kept matching files successfully.", "success");
-          } else if (activeIntent === 'REMOVE') {
-            stagedFiles = stagedFiles.filter(file => !evaluateAST(file, activeAST));
-            const removedCount = initialCount - stagedFiles.length;
-            showToast(`Removed ${removedCount} matching files`, 'info');
-          }
-
-          searchInput.value = '';
-          activeAST = null;
-          activeIntent = 'VIEW';
-          updateIntentMirroringUI(null);
-          updateStagingUI();
-          return;
-        }
-
-        // --- Standard Command Fallbacks ---
-        if (valLower === 'remove empty' || valLower === 'empty remove' || valLower === 'r empty' || valLower === 'empty r') {
-          const initialCount = stagedFiles.length;
-          stagedFiles = stagedFiles.filter(file => file.content.trim().length > 0);
-          const removedCount = initialCount - stagedFiles.length;
-          if (removedCount > 0) {
-            showToast(`Removed ${removedCount} empty file(s)`, 'info');
-            searchInput.value = '';
-            activeAST = null;
-          } else {
-            showToast("No empty staged files found", 'error');
-          }
-          updateStagingUI();
-          return;
-        }
-
-        const warningCmd = parseWarningCommand(val);
-        if (warningCmd && warningCmd.type === 'action' && warningCmd.action === 'remove') {
-          const initialCount = stagedFiles.length;
-          stagedFiles = stagedFiles.filter(file => !file[warningCmd.warningKey]);
-          const removedCount = initialCount - stagedFiles.length;
-          if (removedCount > 0) {
-            showToast(`Removed ${removedCount} ${warningCmd.warningLabel.toLowerCase()} file(s)`, 'info');
-            searchInput.value = '';
-            activeAST = null;
-          } else {
-            showToast(`No staged ${warningCmd.warningLabel.toLowerCase()} files found`, 'error');
-          }
-          updateStagingUI();
-          return;
-        }
-
-        const keepMatch = valLower.match(/^(keep\s+(\.?\w+))|((\.?\w+)\s+keep)$/);
-        if (keepMatch) {
-          let ext = keepMatch[2] || keepMatch[4];
-          if (!ext.startsWith('.')) ext = '.' + ext;
-          const initialCount = stagedFiles.length;
-          stagedFiles = stagedFiles.filter(file => file.name.toLowerCase().endsWith(ext));
-          const removedCount = initialCount - stagedFiles.length;
-          if (removedCount > 0) {
-            showToast(`Kept only files with extension '${ext}' (Removed ${removedCount} files)`, 'info');
-            searchInput.value = '';
-            activeAST = null;
-          } else {
-            showToast("No files were removed (all staged matched '" + ext + "')", "error");
-          }
-          updateStagingUI();
-          return;
-        }
-
-        const parts = valLower.split(/\s+/);
-        if (parts.length === 2) {
-          const [part1, part2] = parts;
-          let targetPath = '';
-          let isPathCommand = false;
-
-          if ((part2 === 'remove' || part2 === 'r') && part1.endsWith('/')) {
-            targetPath = part1;
-            isPathCommand = true;
-          } else if ((part1 === 'remove' || part1 === 'r') && part2.endsWith('/')) {
-            targetPath = part2;
-            isPathCommand = true;
-          }
-
-          if (isPathCommand) {
-            const initialCount = stagedFiles.length;
-            stagedFiles = stagedFiles.filter(file => !file.name.toLowerCase().includes(targetPath));
-            const removedCount = initialCount - stagedFiles.length;
-            if (removedCount > 0) {
-              showToast(`Removed ${removedCount} file(s) under directory '${targetPath}'`, 'info');
-              searchInput.value = '';
-              activeAST = null;
-            } else {
-              showToast(`No files found under path '${targetPath}'`, 'error');
+            if (crit.type === 'path') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-[10px]" title="File path must contain"><span class="text-[9px] uppercase tracking-wider font-extrabold text-indigo-400 mr-1.5">path:</span>${crit.value}</span>`;
             }
-            updateStagingUI();
-            return;
-          }
-        }
-
-        if (parts.length === 2) {
-          let ext = parts[0];
-          const action = parts[1];
-
-          if (action === 'r' || action === 'remove') {
-            if (!ext.startsWith('.')) ext = '.' + ext;
-            const initialCount = stagedFiles.length;
-            stagedFiles = stagedFiles.filter(file => !file.name.toLowerCase().endsWith(ext));
-            const removedCount = initialCount - stagedFiles.length;
-            if (removedCount > 0) {
-              showToast(`Removed ${removedCount} file(s) with extension '${ext}'`, 'info');
-              searchInput.value = '';
-              activeAST = null;
-            } else {
-              showToast(`No staged files match extension '${ext}'`, 'error');
+            if (crit.type === 'content') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold text-[10px]" title="Content must contain phrase"><span class="text-[9px] uppercase tracking-wider font-extrabold text-amber-500 mr-1.5">text:</span>"${crit.value}"</span>`;
             }
-            updateStagingUI();
-          }
+            if (crit.type === 'size_op') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 font-semibold text-[10px]" title="Size constraint"><span class="text-[9px] uppercase tracking-wider font-extrabold text-teal-400 mr-1.5">size:</span>${crit.op} ${(crit.bytes / 1024).toFixed(1)} KB</span>`;
+            }
+            if (crit.type === 'size_range') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 font-semibold text-[10px]" title="Size range"><span class="text-[9px] uppercase tracking-wider font-extrabold text-teal-400 mr-1.5">size:</span>${(crit.min / 1024).toFixed(1)}K - ${(crit.max / 1024).toFixed(1)}K</span>`;
+            }
+            if (crit.type === 'state') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[10px]" title="File state check"><span class="text-[9px] uppercase tracking-wider font-extrabold text-emerald-400 mr-1.5">state:</span>${crit.label}</span>`;
+            }
+            if (crit.type === 'text') {
+                return `<span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px]" title="Generic name match"><span class="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mr-1.5">name:</span>contains: ${crit.value}</span>`;
+            }
+            return '';
         }
-      }
-    });
 
-    function updateStagingUI(resetSearchInput = false) {
-      if (resetSearchInput) {
-        searchInput.value = '';
-        activeAST = null;
-        activeIntent = 'VIEW';
-        updateIntentMirroringUI(null);
-      }
+        searchInput.addEventListener('input', (e) => {
+            const rawValue = e.target.value;
+            const trimmed = rawValue.trim();
+            const trimmedLower = trimmed.toLowerCase();
 
-      if (stagedFiles.length > 0) {
-        stagingArea.classList.remove('hidden');
-        clearAllBtn.classList.remove('hidden');
-        setTimeout(() => stagingArea.classList.remove('opacity-0'), 10);
-      } else {
-        stagingArea.classList.add('opacity-0');
-        clearAllBtn.classList.add('hidden');
-        setTimeout(() => stagingArea.classList.add('hidden'), 300);
-      }
+            if (trimmedLower.startsWith('ask:')) {
+                const nlpSentence = trimmed.slice(4).trim();
+                const parsedResult = parseNLP(nlpSentence);
+                activeAST = parsedResult.ast;
+                activeIntent = parsedResult.intent;
+                updateIntentMirroringUI(parsedResult);
+            }
+            else {
+                document.getElementById('intent-mirroring-container').classList.add('hidden');
+                activeIntent = 'VIEW';
 
-      fileCountDisplay.textContent = `(${stagedFiles.length})`;
-      fileListContainer.innerHTML = '';
+                if (trimmed === '') {
+                    activeAST = null;
+                } else if (trimmed.startsWith('-') || trimmed.startsWith('!')) {
+                    const negativeTerm = trimmed.slice(1).toLowerCase().trim();
+                    activeAST = {
+                        type: 'NOT',
+                        operand: {
+                            type: 'LEAF',
+                            criteria: [{ type: 'text', value: negativeTerm }]
+                        }
+                    };
+                } else {
+                    const sizeMatch = trimmedLower.match(/^([<>])\s*(\d+(?:\.\d+)?)\s*(kb|mb|b)?$/i);
+                    if (sizeMatch) {
+                        const op = sizeMatch[1];
+                        const val = parseFloat(sizeMatch[2]);
+                        const unit = (sizeMatch[3] || 'kb').toLowerCase();
+                        let targetBytes = val;
+                        if (unit === 'kb') targetBytes = val * 1024;
+                        else if (unit === 'mb') targetBytes = val * 1024 * 1024;
 
-      // Real-time dynamic filtering using parsed active AST structure
-      const visibleFiles = stagedFiles.filter(file => {
-        if (!activeAST) return true;
-        return evaluateAST(file, activeAST);
-      });
+                        activeAST = {
+                            type: 'LEAF',
+                            criteria: [{ type: 'size_op', op: op, bytes: targetBytes, raw: `${op}${val}${unit}` }]
+                        };
+                    } else {
+                        const warningFilterKey = getActiveWarningFilter(rawValue);
+                        if (warningFilterKey) {
+                            activeAST = {
+                                type: 'LEAF',
+                                criteria: [{
+                                    type: 'state',
+                                    flag: warningFilterKey,
+                                    label: WARNING_TYPES[warningFilterKey === 'isLarge' ? 'large' : 'binary'].label
+                                }]
+                            };
+                        } else {
+                            activeAST = {
+                                type: 'LEAF',
+                                criteria: [{ type: 'text', value: trimmedLower }]
+                            };
+                        }
+                    }
+                }
+            }
 
-      if (visibleFiles.length === 0 && activeAST !== null) {
-        const noMatchLi = document.createElement('li');
-        noMatchLi.className = 'p-6 text-center text-xs text-gray-400 italic font-medium';
-        noMatchLi.textContent = 'No staged files match your parsed filter criteria';
-        fileListContainer.appendChild(noMatchLi);
-      }
-
-      visibleFiles.forEach((fileObj) => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors group';
-
-        let badgesHTML = '';
-        Object.values(WARNING_TYPES).forEach(warning => {
-          if (fileObj[warning.key]) {
-            badgesHTML += `<span class="inline-flex items-center px-2 py-0.5 ml-2 rounded text-[10px] font-bold ${warning.badgeBg} ${warning.badgeText} ${warning.badgeBorder} select-none shadow-sm cursor-help" title="${warning.title}">${warning.label}</span>`;
-          }
+            updateStagingUI(false);
         });
 
-        li.innerHTML = `
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = searchInput.value.trim();
+                const valLower = val.toLowerCase();
+
+                if (valLower.startsWith('ask:')) {
+                    if (!activeAST) {
+                        showToast("Could not identify any valid file conditions to target. Please be more specific.", "error");
+                        return;
+                    }
+
+                    if (activeIntent === 'VIEW') {
+                        showToast("In View/Filtering mode. Type 'keep' or 'remove' inside prompt to run batch operations.", "info");
+                        return;
+                    }
+
+                    const initialCount = stagedFiles.length;
+
+                    if (activeIntent === 'KEEP') {
+                        stagedFiles = stagedFiles.filter(file => evaluateAST(file, activeAST));
+                        const removedCount = initialCount - stagedFiles.length;
+                        showToast("Kept matching files successfully.", "success");
+                    } else if (activeIntent === 'REMOVE') {
+                        stagedFiles = stagedFiles.filter(file => !evaluateAST(file, activeAST));
+                        const removedCount = initialCount - stagedFiles.length;
+                        showToast(`Removed ${removedCount} matching files`, 'info');
+                    }
+
+                    searchInput.value = '';
+                    activeAST = null;
+                    activeIntent = 'VIEW';
+                    updateIntentMirroringUI(null);
+                    updateStagingUI();
+                    return;
+                }
+
+                if (valLower === 'remove empty' || valLower === 'empty remove' || valLower === 'r empty' || valLower === 'empty r') {
+                    const initialCount = stagedFiles.length;
+                    stagedFiles = stagedFiles.filter(file => file.content.trim().length > 0);
+                    const removedCount = initialCount - stagedFiles.length;
+                    if (removedCount > 0) {
+                        showToast(`Removed ${removedCount} empty file(s)`, 'info');
+                        searchInput.value = '';
+                        activeAST = null;
+                    } else {
+                        showToast("No empty staged files found", 'error');
+                    }
+                    updateStagingUI();
+                    return;
+                }
+
+                const warningCmd = parseWarningCommand(val);
+                if (warningCmd && warningCmd.type === 'action' && warningCmd.action === 'remove') {
+                    const initialCount = stagedFiles.length;
+                    stagedFiles = stagedFiles.filter(file => !file[warningCmd.warningKey]);
+                    const removedCount = initialCount - stagedFiles.length;
+                    if (removedCount > 0) {
+                        showToast(`Removed ${removedCount} ${warningCmd.warningLabel.toLowerCase()} file(s)`, 'info');
+                        searchInput.value = '';
+                        activeAST = null;
+                    } else {
+                        showToast(`No staged ${warningCmd.warningLabel.toLowerCase()} files found`, 'error');
+                    }
+                    updateStagingUI();
+                    return;
+                }
+
+                const keepMatch = valLower.match(/^(keep\s+(\.?\w+))|((\.?\w+)\s+keep)$/);
+                if (keepMatch) {
+                    let ext = keepMatch[2] || keepMatch[4];
+                    if (!ext.startsWith('.')) ext = '.' + ext;
+                    const initialCount = stagedFiles.length;
+                    stagedFiles = stagedFiles.filter(file => file.name.toLowerCase().endsWith(ext));
+                    const removedCount = initialCount - stagedFiles.length;
+                    if (removedCount > 0) {
+                        showToast(`Kept only files with extension '${ext}' (Removed ${removedCount} files)`, 'info');
+                        searchInput.value = '';
+                        activeAST = null;
+                    } else {
+                        showToast("No files were removed (all staged matched '" + ext + "')", "error");
+                    }
+                    updateStagingUI();
+                    return;
+                }
+
+                const parts = valLower.split(/\s+/);
+                if (parts.length === 2) {
+                    const [part1, part2] = parts;
+                    let targetPath = '';
+                    let isPathCommand = false;
+
+                    if ((part2 === 'remove' || part2 === 'r') && part1.endsWith('/')) {
+                        targetPath = part1;
+                        isPathCommand = true;
+                    } else if ((part1 === 'remove' || part1 === 'r') && part2.endsWith('/')) {
+                        targetPath = part2;
+                        isPathCommand = true;
+                    }
+
+                    if (isPathCommand) {
+                        const initialCount = stagedFiles.length;
+                        stagedFiles = stagedFiles.filter(file => !file.name.toLowerCase().includes(targetPath));
+                        const removedCount = initialCount - stagedFiles.length;
+                        if (removedCount > 0) {
+                            showToast(`Removed ${removedCount} file(s) under directory '${targetPath}'`, 'info');
+                            searchInput.value = '';
+                            activeAST = null;
+                        } else {
+                            showToast(`No files found under path '${targetPath}'`, 'error');
+                        }
+                        updateStagingUI();
+                        return;
+                    }
+                }
+
+                if (parts.length === 2) {
+                    let ext = parts[0];
+                    const action = parts[1];
+
+                    if (action === 'r' || action === 'remove') {
+                        if (!ext.startsWith('.')) ext = '.' + ext;
+                        const initialCount = stagedFiles.length;
+                        stagedFiles = stagedFiles.filter(file => !file.name.toLowerCase().endsWith(ext));
+                        const removedCount = initialCount - stagedFiles.length;
+                        if (removedCount > 0) {
+                            showToast(`Removed ${removedCount} file(s) with extension '${ext}'`, 'info');
+                            searchInput.value = '';
+                            activeAST = null;
+                        } else {
+                            showToast(`No staged files match extension '${ext}'`, 'error');
+                        }
+                        updateStagingUI();
+                    }
+                }
+            }
+        });
+
+        function updateStagingUI(resetSearchInput = false) {
+            if (resetSearchInput) {
+                searchInput.value = '';
+                activeAST = null;
+                activeIntent = 'VIEW';
+                updateIntentMirroringUI(null);
+            }
+
+            if (stagedFiles.length > 0) {
+                stagingArea.classList.remove('hidden');
+                clearAllBtn.classList.remove('hidden');
+                setTimeout(() => stagingArea.classList.remove('opacity-0'), 10);
+            } else {
+                stagingArea.classList.add('opacity-0');
+                clearAllBtn.classList.add('hidden');
+                setTimeout(() => stagingArea.classList.add('hidden'), 300);
+            }
+
+            fileCountDisplay.textContent = `(${stagedFiles.length})`;
+            fileListContainer.innerHTML = '';
+
+            const visibleFiles = stagedFiles.filter(file => {
+                if (!activeAST) return true;
+                return evaluateAST(file, activeAST);
+            });
+
+            if (visibleFiles.length === 0 && activeAST !== null) {
+                const noMatchLi = document.createElement('li');
+                noMatchLi.className = 'p-6 text-center text-xs text-gray-400 italic font-medium';
+                noMatchLi.textContent = 'No staged files match your parsed filter criteria';
+                fileListContainer.appendChild(noMatchLi);
+            }
+
+            visibleFiles.forEach((fileObj) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors group';
+
+                let badgesHTML = '';
+                Object.values(WARNING_TYPES).forEach(warning => {
+                    if (fileObj[warning.key]) {
+                        badgesHTML += `<span class="inline-flex items-center px-2 py-0.5 ml-2 rounded text-[10px] font-bold ${warning.badgeBg} ${warning.badgeText} ${warning.badgeBorder} select-none shadow-sm cursor-help" title="${warning.title}">${warning.label}</span>`;
+                    }
+                });
+
+                li.innerHTML = `
           <div class="flex items-center space-x-3 overflow-hidden flex-1">
             <svg class="w-6 h-6 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             <div class="truncate">
@@ -1459,143 +1501,153 @@
           </button>
         `;
 
-        li.querySelector('.remove-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          removeFile(fileObj.id);
+                li.querySelector('.remove-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFile(fileObj.id);
+                });
+
+                fileListContainer.appendChild(li);
+            });
+
+            updateEstimatedSize();
+        }
+
+        function removeFile(idToRemove) {
+            const fileIndex = stagedFiles.findIndex(f => f.id === idToRemove);
+            if (fileIndex !== -1) {
+                const removedName = stagedFiles[fileIndex].name;
+                stagedFiles.splice(fileIndex, 1);
+                updateStagingUI();
+                showToast(`Removed: ${removedName}`, 'info');
+            }
+        }
+
+        clearAllBtn.addEventListener('click', () => {
+            stagedFiles = [];
+            updateStagingUI(true);
+            showToast("All staged files cleared successfully.", "info");
         });
 
-        fileListContainer.appendChild(li);
-      });
+        function generateCompiledString() {
+            if (stagedFiles.length === 0) return "";
 
-      updateEstimatedSize();
-    }
+            const stripComments = compressComments.checked;
+            const removeBlanks = compressBlanks.checked;
+            const trimWhitespace = compressSpacing.checked;
 
-    function removeFile(idToRemove) {
-      const fileIndex = stagedFiles.findIndex(f => f.id === idToRemove);
-      if (fileIndex !== -1) {
-        const removedName = stagedFiles[fileIndex].name;
-        stagedFiles.splice(fileIndex, 1);
-        updateStagingUI();
-        showToast(`Removed: ${removedName}`, 'info');
-      }
-    }
+            let compiledString = "";
 
-    clearAllBtn.addEventListener('click', () => {
-      stagedFiles = [];
-      updateStagingUI(true);
-      showToast("All staged files cleared successfully.", "info");
-    });
+            stagedFiles.forEach(file => {
+                compiledString += `\n\n`;
+                compiledString += `// ===================================================================================\n`;
+                compiledString += `// ===================================================================================\n`;
+                compiledString += `//\n`;
+                compiledString += `//                               FILE: ${file.name}\n`;
+                compiledString += `//\n`;
+                compiledString += `// ===================================================================================\n`;
+                compiledString += `// ===================================================================================\n\n`;
 
-    function generateCompiledString() {
-      if (stagedFiles.length === 0) return "";
+                let contentToAdd = file.content;
 
-      const stripComments = compressComments.checked;
-      const removeBlanks = compressBlanks.checked;
-      const trimWhitespace = compressSpacing.checked;
+                if (stripComments) {
+                    contentToAdd = contentToAdd.replace(/\/\*[\s\S]*?\*\//g, '');
+                    contentToAdd = contentToAdd.replace(/<!--[\s\S]*?-->/g, '');
+                    contentToAdd = contentToAdd.replace(/(?<!:)\/\/.*$/gm, '');
+                }
 
-      let compiledString = "";
+                if (trimWhitespace || removeBlanks) {
+                    let lines = contentToAdd.split(/\r?\n/);
+                    if (trimWhitespace) lines = lines.map(line => line.trim());
+                    if (removeBlanks) lines = lines.filter(line => line.length > 0);
+                    contentToAdd = lines.join('\n');
+                }
 
-      stagedFiles.forEach(file => {
-        compiledString += `\n\n`;
-        compiledString += `// ===================================================================================\n`;
-        compiledString += `// ===================================================================================\n`;
-        compiledString += `//\n`;
-        compiledString += `//                               FILE: ${file.name}\n`;
-        compiledString += `//\n`;
-        compiledString += `// ===================================================================================\n`;
-        compiledString += `// ===================================================================================\n\n`;
+                compiledString += contentToAdd;
+                compiledString += `\n\n`;
+            });
 
-        let contentToAdd = file.content;
-
-        if (stripComments) {
-          contentToAdd = contentToAdd.replace(/\/\*[\s\S]*?\*\//g, '');
-          contentToAdd = contentToAdd.replace(/<!--[\s\S]*?-->/g, '');
-          contentToAdd = contentToAdd.replace(/(?<!:)\/\/.*$/gm, '');
+            return compiledString;
         }
 
-        if (trimWhitespace || removeBlanks) {
-          let lines = contentToAdd.split(/\r?\n/);
-          if (trimWhitespace) lines = lines.map(line => line.trim());
-          if (removeBlanks) lines = lines.filter(line => line.length > 0);
-          contentToAdd = lines.join('\n');
+        function updateEstimatedSize() {
+            const compiledString = generateCompiledString();
+            const sizeInBytes = new Blob([compiledString]).size;
+
+            let displaySize = `${(sizeInBytes / 1024).toFixed(1)} KB`;
+            if (sizeInBytes > 1024 * 1024) {
+                displaySize = `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
+            } else if (sizeInBytes === 0 && stagedFiles.length === 0) {
+                displaySize = `0.0 KB`;
+            }
+
+            if (estimatedSizeDisplay) estimatedSizeDisplay.textContent = displaySize;
         }
 
-        compiledString += contentToAdd;
-        compiledString += `\n\n`;
-      });
+        [compressComments, compressBlanks, compressSpacing].forEach(box => {
+            box.addEventListener('change', updateEstimatedSize);
+        });
 
-      return compiledString;
-    }
+        compileBtn.addEventListener('click', () => {
+            if (stagedFiles.length === 0) {
+                showToast("Please stage at least one file first.", "error");
+                return;
+            }
 
-    function updateEstimatedSize() {
-      const compiledString = generateCompiledString();
-      const sizeInBytes = new Blob([compiledString]).size;
+            const compiledString = generateCompiledString();
+            const blob = new Blob([compiledString], { type: 'text/plain' });
 
-      let displaySize = `${(sizeInBytes / 1024).toFixed(1)} KB`;
-      if (sizeInBytes > 1024 * 1024) {
-        displaySize = `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
-      } else if (sizeInBytes === 0 && stagedFiles.length === 0) {
-        displaySize = `0.0 KB`;
-      }
+            let customName = filenameInput.value.trim() || 'compiled_project';
+            let customExt = extensionInput.value.trim() || 'txt';
 
-      if (estimatedSizeDisplay) estimatedSizeDisplay.textContent = displaySize;
-    }
+            // Strip starting dot if user added one manually
+            if (customExt.startsWith('.')) {
+                customExt = customExt.substring(1);
+            }
 
-    [compressComments, compressBlanks, compressSpacing].forEach(box => {
-      box.addEventListener('change', updateEstimatedSize);
-    });
+            // Ensure the name doesn't already end with the extension to avoid "app.js.js"
+            if (!customName.toLowerCase().endsWith('.' + customExt.toLowerCase())) {
+                customName += '.' + customExt;
+            }
 
-    compileBtn.addEventListener('click', () => {
-      if (stagedFiles.length === 0) {
-        showToast("Please stage at least one file first.", "error");
-        return;
-      }
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.style.display = 'none';
+            downloadLink.href = url;
+            downloadLink.download = customName;
 
-      const compiledString = generateCompiledString();
-      const blob = new Blob([compiledString], { type: 'text/plain' });
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
 
-      let customName = filenameInput.value.trim() || 'compiled_project';
-      if (!customName.endsWith('.txt')) customName += '.txt';
-
-      const url = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.style.display = 'none';
-      downloadLink.href = url;
-      downloadLink.download = customName;
-
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(url);
-
-      const origBtnHTML = compileBtn.innerHTML;
-      compileBtn.innerHTML = `
+            const origBtnHTML = compileBtn.innerHTML;
+            compileBtn.innerHTML = `
         <svg class="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
         <span class="text-emerald-200">Compiled!</span>
       `;
-      compileBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-      compileBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
-      showToast("Download started successfully", "success");
+            compileBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            compileBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+            showToast("Download started successfully", "success");
 
-      setTimeout(() => {
-        compileBtn.innerHTML = origBtnHTML;
-        compileBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-        compileBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-      }, 2500);
-    });
+            setTimeout(() => {
+                compileBtn.innerHTML = origBtnHTML;
+                compileBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                compileBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }, 2500);
+        });
 
-    folderBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      folderInput.click();
-    });
+        folderBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            folderInput.click();
+        });
 
-    folderInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files.length > 0) {
-        processFileList(e.target.files);
-      }
-      e.target.value = '';
+        folderInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                processFileList(e.target.files);
+            }
+            e.target.value = '';
+        });
     });
-  });
 </script>
 </body>
 </html>
